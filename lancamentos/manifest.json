@@ -1,9 +1,9 @@
 {
-  "id": "controle-servicos-extras-se",
+  "id": "/controle-servicos-extras/lancamentos/",
   "name": "SE - Lançamento de Serviços Extras",
   "short_name": "SE Extras",
   "description": "Módulo de Lançamento de Serviços Extras para Celular",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -20,13 +20,13 @@
       "src": "icon-se-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon-se-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
