@@ -1,9 +1,9 @@
 {
-  "id": "controle-servicos-extras-adm",
+  "id": "/controle-servicos-extras/adm/",
   "name": "ADM - Controle de Serviços Extras",
   "short_name": "ADM Extras",
   "description": "Painel Administrativo de Serviços Extras, Fechamentos, Recibos e Relatórios",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
@@ -20,13 +20,13 @@
       "src": "icon-adm-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon-adm-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
