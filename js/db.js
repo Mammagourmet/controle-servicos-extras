@@ -14,7 +14,6 @@
   let supabaseClient = null;
   let isCloudConnected = false;
 
-  // Dados iniciais padrão para o primeiro uso (totalmente editáveis no ADM)
   function getInitialStore() {
     const now = new Date().toISOString();
     const today = new Date().toISOString().slice(0, 10);
@@ -49,78 +48,7 @@
         { id: "usr_lanc_1", nome: "João Encarregado", login: "joao", senha: "123", perfil: "LANCADOR", ativo: true, criado_em: now },
         { id: "usr_lanc_2", nome: "Maria Supervisora", login: "maria", senha: "123", perfil: "LANCADOR", ativo: true, criado_em: now }
       ],
-      lancamentos: [
-        {
-          id: "lnc_demo_1",
-          colaborador_id: "col_1",
-          colaborador_nome: "Carlos Eduardo Silva",
-          cargo_id: "crg_2",
-          cargo_nome: "Atendente / Garçom",
-          empresa_id: "emp_1",
-          empresa_nome: "Matriz - Unidade Central",
-          data_trabalho: today,
-          turno: "Noite",
-          motivo: "Reforço de equipe para evento corporativo",
-          valor_tabela: 150.00,
-          valor: 150.00,
-          valor_alterado_manual: false,
-          solicitante_id: "usr_lanc_1",
-          solicitante_nome: "João Encarregado",
-          lancado_por_id: "usr_lanc_1",
-          lancado_por_nome: "João Encarregado",
-          lancado_por_login: "joao",
-          status_lancamento: "ATIVO",
-          status_pagamento: "PENDENTE",
-          data_pagamento: null,
-          fechamento_ref: "",
-          conservar_legal: false,
-          historico: [
-            {
-              data: now,
-              acao: "CRIAÇÃO",
-              usuario: "João Encarregado (joao)",
-              detalhes: "Lançamento registrado pelo módulo celular."
-            }
-          ],
-          criado_em: now,
-          atualizado_em: now
-        },
-        {
-          id: "lnc_demo_2",
-          colaborador_id: "col_1",
-          colaborador_nome: "Carlos Eduardo Silva",
-          cargo_id: "crg_2",
-          cargo_nome: "Atendente / Garçom",
-          empresa_id: "emp_2",
-          empresa_nome: "Filial Sul - Eventos & Serviços",
-          data_trabalho: today,
-          turno: "Tarde",
-          motivo: "Substituição de folga na Filial Sul",
-          valor_tabela: 165.00,
-          valor: 165.00,
-          valor_alterado_manual: false,
-          solicitante_id: "usr_lanc_2",
-          solicitante_nome: "Maria Supervisora",
-          lancado_por_id: "usr_lanc_2",
-          lancado_por_nome: "Maria Supervisora",
-          lancado_por_login: "maria",
-          status_lancamento: "ATIVO",
-          status_pagamento: "PENDENTE",
-          data_pagamento: null,
-          fechamento_ref: "",
-          conservar_legal: false,
-          historico: [
-            {
-              data: now,
-              acao: "CRIAÇÃO",
-              usuario: "Maria Supervisora (maria)",
-              detalhes: "Lançamento registrado pelo módulo celular."
-            }
-          ],
-          criado_em: now,
-          atualizado_em: now
-        }
-      ]
+      lancamentos: []
     };
   }
 
@@ -180,24 +108,16 @@
     }));
   }
 
-  // Mescla listas locais e da nuvem sem perder nenhum cadastro feito localmente
-  function mergeListsById(localList, cloudList) {
+  // Mescla listas por chave única (evitando conflitos de UNIQUE constraint no PostgreSQL)
+  function mergeListsUnique(localList, cloudList, keyFn) {
     const map = new Map();
-    for (const item of (localList || [])) {
-      if (item && item.id) map.set(item.id, item);
-    }
+    // Primeiro coloca os da nuvem
     for (const item of (cloudList || [])) {
-      if (item && item.id) {
-        // Se já existia localmente, preserva alterações locais ou mescla
-        const loc = map.get(item.id);
-        if (!loc) {
-          map.set(item.id, item);
-        } else {
-          const dtLoc = new Date(loc.atualizado_em || loc.criado_em || 0).getTime();
-          const dtCld = new Date(item.atualizado_em || item.criado_em || 0).getTime();
-          map.set(item.id, dtLoc > dtCld ? loc : item);
-        }
-      }
+      if (item) map.set(keyFn(item), item);
+    }
+    // Depois aplica os locais por cima (priorizando os cadastros feitos pelo usuário)
+    for (const item of (localList || [])) {
+      if (item) map.set(keyFn(item), item);
     }
     return Array.from(map.values());
   }
@@ -210,7 +130,6 @@
         const { data, error } = await supabaseClient.from("usuarios").select("id").limit(1);
         if (!error) {
           isCloudConnected = true;
-          // Sincroniza enviando primeiro eventuais cadastros locais novos para a nuvem
           await syncBidirecional();
           return { mode: "SUPABASE", connected: true, url: creds.url };
         } else {
@@ -228,7 +147,6 @@
     return { mode: "LOCAL", connected: false };
   }
 
-  // Envia cadastros locais novos para o Supabase e puxa os da nuvem
   async function syncBidirecional() {
     if (!supabaseClient || !isCloudConnected) return loadLocalStore();
     try {
@@ -250,43 +168,95 @@
       ]);
 
       const merged = {
-        empresas: mergeListsById(local.empresas, resEmpresas.data || []),
-        cargos: mergeListsById(local.cargos, resCargos.data || []),
-        colaboradores: mergeListsById(local.colaboradores, resColaboradores.data || []),
-        tabela_valores: mergeListsById(local.tabela_valores, (resValores.data || []).map(v => ({ ...v, valor: Number(v.valor || 0) }))),
-        usuarios: mergeListsById(local.usuarios, resUsuarios.data || []),
-        lancamentos: mergeListsById(local.lancamentos, (resLancamentos.data || []).map(l => ({
-          ...l,
-          valor: Number(l.valor || 0),
-          valor_tabela: Number(l.valor_tabela || 0),
-          historico: Array.isArray(l.historico) ? l.historico : []
-        })))
+        empresas: mergeListsUnique(local.empresas, resEmpresas.data || [], x => x.id),
+        cargos: mergeListsUnique(local.cargos, resCargos.data || [], x => String(x.nome || "").trim().toLowerCase()),
+        colaboradores: mergeListsUnique(local.colaboradores, resColaboradores.data || [], x => x.id),
+        tabela_valores: mergeListsUnique(
+          local.tabela_valores,
+          (resValores.data || []).map(v => ({ ...v, valor: Number(v.valor || 0) })),
+          x => `${x.empresa_id}___${x.cargo_id}`
+        ),
+        usuarios: mergeListsUnique(local.usuarios, resUsuarios.data || [], x => String(x.login || "").trim().toLowerCase()),
+        lancamentos: mergeListsUnique(
+          local.lancamentos,
+          (resLancamentos.data || []).map(l => ({
+            ...l,
+            valor: Number(l.valor || 0),
+            valor_tabela: Number(l.valor_tabela || 0),
+            historico: Array.isArray(l.historico) ? l.historico : []
+          })),
+          x => x.id
+        )
       };
 
       saveLocalStore(merged);
-
-      // Envia itens locais que ainda não estavam na nuvem
-      const checks = [
-        { name: "empresas", mergedRows: merged.empresas, cloudRows: resEmpresas.data || [] },
-        { name: "cargos", mergedRows: merged.cargos, cloudRows: resCargos.data || [] },
-        { name: "colaboradores", mergedRows: merged.colaboradores, cloudRows: resColaboradores.data || [] },
-        { name: "tabela_valores", mergedRows: merged.tabela_valores, cloudRows: resValores.data || [] },
-        { name: "usuarios", mergedRows: merged.usuarios, cloudRows: resUsuarios.data || [] },
-        { name: "lancamentos", mergedRows: merged.lancamentos, cloudRows: resLancamentos.data || [] }
-      ];
-
-      for (const c of checks) {
-        const cloudIds = new Set(c.cloudRows.map(r => r.id));
-        const novosLocais = c.mergedRows.filter(r => !cloudIds.has(r.id));
-        if (novosLocais.length > 0) {
-          await supabaseClient.from(c.name).upsert(novosLocais, { onConflict: "id" });
-        }
-      }
-
+      await enviarLinhasSeguramente(merged);
       return merged;
     } catch (e) {
       console.error("Erro na sincronização bidirecional:", e);
       return loadLocalStore();
+    }
+  }
+
+  // Envia dados locais para o Supabase tratando chaves únicas (nome de cargo, empresa+cargo, login)
+  async function enviarLinhasSeguramente(store) {
+    if (!supabaseClient) return;
+
+    // 1. Empresas
+    if (store.empresas && store.empresas.length > 0) {
+      await supabaseClient.from("empresas").upsert(store.empresas, { onConflict: "id" });
+    }
+
+    // 2. Cargos (evita conflito de nome único)
+    const cargosUnicos = mergeListsUnique(store.cargos, [], x => String(x.nome || "").trim().toLowerCase());
+    for (const crg of cargosUnicos) {
+      const { error } = await supabaseClient.from("cargos").upsert(crg, { onConflict: "id" });
+      if (error && error.message.includes("cargos_nome_key")) {
+        await supabaseClient.from("cargos").upsert(crg, { onConflict: "nome" });
+      }
+    }
+
+    // 3. Colaboradores
+    if (store.colaboradores && store.colaboradores.length > 0) {
+      await supabaseClient.from("colaboradores").upsert(store.colaboradores, { onConflict: "id" });
+    }
+
+    // 4. Tabela de Valores (chave única composta: empresa_id,cargo_id)
+    const valoresUnicos = mergeListsUnique(store.tabela_valores, [], x => `${x.empresa_id}___${x.cargo_id}`);
+    for (const val of valoresUnicos) {
+      // Remove qualquer registro existente na nuvem com o mesmo par (empresa_id, cargo_id) mas id diferente
+      await supabaseClient
+        .from("tabela_valores")
+        .delete()
+        .eq("empresa_id", val.empresa_id)
+        .eq("cargo_id", val.cargo_id)
+        .neq("id", val.id);
+
+      const { error } = await supabaseClient
+        .from("tabela_valores")
+        .upsert(val, { onConflict: "id" });
+
+      if (error) {
+        await supabaseClient
+          .from("tabela_valores")
+          .upsert(val, { onConflict: "empresa_id,cargo_id" });
+      }
+    }
+
+    // 5. Usuários (chave única: login)
+    const usuariosUnicos = mergeListsUnique(store.usuarios, [], x => String(x.login || "").trim().toLowerCase());
+    for (const usr of usuariosUnicos) {
+      await supabaseClient
+        .from("usuarios")
+        .delete()
+        .eq("login", usr.login)
+        .neq("id", usr.id);
+      await supabaseClient.from("usuarios").upsert(usr, { onConflict: "id" });
+    }
+
+    // 6. Lançamentos
+    if (store.lancamentos && store.lancamentos.length > 0) {
+      await supabaseClient.from("lancamentos").upsert(store.lancamentos, { onConflict: "id" });
     }
   }
 
@@ -334,21 +304,7 @@
   async function pushLocalStoreToCloud() {
     if (!supabaseClient) throw new Error("Cliente Supabase não configurado.");
     const store = loadLocalStore();
-    const tables = [
-      { name: "empresas", rows: store.empresas },
-      { name: "cargos", rows: store.cargos },
-      { name: "colaboradores", rows: store.colaboradores },
-      { name: "tabela_valores", rows: store.tabela_valores },
-      { name: "usuarios", rows: store.usuarios },
-      { name: "lancamentos", rows: store.lancamentos }
-    ];
-
-    for (const t of tables) {
-      if (t.rows && t.rows.length > 0) {
-        const { error } = await supabaseClient.from(t.name).upsert(t.rows, { onConflict: "id" });
-        if (error) throw new Error(`Erro na tabela ${t.name}: ${error.message}`);
-      }
-    }
+    await enviarLinhasSeguramente(store);
     isCloudConnected = true;
     await pullAllFromCloud();
     return true;
@@ -371,6 +327,14 @@
     saveLocalStore(store);
 
     if (supabaseClient && isCloudConnected) {
+      if (table === "tabela_valores") {
+        await supabaseClient
+          .from("tabela_valores")
+          .delete()
+          .eq("empresa_id", item.empresa_id)
+          .eq("cargo_id", item.cargo_id)
+          .neq("id", item.id);
+      }
       const { error } = await supabaseClient.from(table).upsert(item, { onConflict: "id" });
       if (error) console.error(`Erro ao salvar no Supabase (${table}):`, error.message);
     }
