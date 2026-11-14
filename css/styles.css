@@ -1,0 +1,771 @@
+/* ==========================================================================
+   SISTEMA DE CONTROLE DE SERVIÇOS EXTRAS - ESTILOS GERAIS E RESPONSIVOS
+   Otimizado para Celular (Mobile-First) e Computador
+   ========================================================================== */
+
+:root {
+  --primary: #1e40af;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --success: #15803d;
+  --success-hover: #166534;
+  --success-light: #dcfce7;
+  --warning: #b45309;
+  --warning-light: #fef3c7;
+  --danger: #b91c1c;
+  --danger-light: #fee2e2;
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --border: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   1. MÓDULO DE LANÇAMENTOS (CELULAR - MOBILE FIRST)
+   ========================================================================== */
+.mobile-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid #e2e8f0;
+}
+
+.mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+}
+
+.mobile-header h1 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.btn-logout-mini {
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.form-label-row .form-label {
+  margin-bottom: 0;
+}
+
+.form-label span.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.76rem;
+  margin-right: 6px;
+}
+
+.btn-inline-add {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quick-add-box {
+  background: #f8fafc;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 13px 14px;
+  font-size: 16px; /* Evita zoom automático no iOS/Android */
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background-color: #fff;
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+}
+
+.turno-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.turno-option {
+  position: relative;
+}
+
+.turno-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.turno-option label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 0.94rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.turno-option input:checked + label {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.15);
+}
+
+.helper-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.helper-badge.auto {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.helper-badge.manual {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.btn-salvar-unico {
+  width: 100%;
+  margin-top: 10px;
+  padding: 16px;
+  font-size: 1.06rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: var(--success);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.3);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn-salvar-unico:hover {
+  background: var(--success-hover);
+}
+
+.btn-salvar-unico:active {
+  transform: scale(0.99);
+}
+
+.toast-feedback {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.toast-feedback.success {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid #86efac;
+}
+
+.toast-feedback.error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid #fca5a5;
+}
+
+/* ==========================================================================
+   2. MÓDULO ADMINISTRATIVO (ADM - RESPONSIVO CELULAR E COMPUTADOR)
+   ========================================================================== */
+.adm-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-topbar {
+  background: #0f172a;
+  color: #fff;
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.adm-brand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.adm-brand h1 {
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.cloud-badge {
+  font-size: 0.74rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.cloud-badge.online {
+  background: #166534;
+  color: #dcfce7;
+}
+
+.cloud-badge.local {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.adm-nav {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.adm-tab-btn {
+  padding: 13px 14px;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.adm-tab-btn:hover {
+  color: var(--primary);
+}
+
+.adm-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: #f8fafc;
+}
+
+.adm-container {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 14px 56px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  padding: 15px 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary);
+}
+
+.kpi-card.pending {
+  border-left-color: var(--warning);
+}
+
+.kpi-card.paid {
+  border-left-color: var(--success);
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  font-size: 1.42rem;
+  font-weight: 800;
+  margin-top: 4px;
+  color: var(--text);
+}
+
+.kpi-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.panel-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.panel-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: end;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  min-height: 40px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-success {
+  background: var(--success);
+  color: #fff;
+}
+
+.btn-success:hover {
+  background: var(--success-hover);
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: #fff;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-outline {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  background: #f8fafc;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  min-height: 34px;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+table.data-table th,
+table.data-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+table.data-table th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+table.data-table tr:hover td {
+  background: #f8fafc;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pill.pago,
+.status-pill.ativo {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.status-pill.pendente {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.status-pill.cancelado,
+.status-pill.inativo {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.subtabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ==========================================================================
+   OTIMIZAÇÃO ESPECIAL DO PAINEL ADM PARA CELULARES (TELAS ATÉ 768PX)
+   Transforma tabelas administrativas em Cards de fácil leitura e toque
+   ========================================================================== */
+@media (max-width: 768px) {
+  .adm-topbar {
+    padding: 12px 14px;
+  }
+
+  .adm-brand h1 {
+    font-size: 0.96rem;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .panel-card {
+    padding: 14px;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .subtabs-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .subtabs-bar .btn {
+    width: 100%;
+    text-align: center;
+    font-size: 0.78rem;
+    padding: 8px 6px;
+  }
+
+  /* Tabelas com classe mobile-cards viram cartões verticais no celular */
+  table.data-table.mobile-cards thead {
+    display: none;
+  }
+
+  table.data-table.mobile-cards,
+  table.data-table.mobile-cards tbody,
+  table.data-table.mobile-cards tr,
+  table.data-table.mobile-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  table.data-table.mobile-cards tr {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  }
+
+  table.data-table.mobile-cards td {
+    padding: 7px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: right;
+  }
+
+  table.data-table.mobile-cards td:last-child {
+    border-bottom: none;
+    padding-top: 10px;
+    justify-content: flex-end;
+  }
+
+  table.data-table.mobile-cards td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #475569;
+    text-transform: uppercase;
+    text-align: left;
+    flex-shrink: 0;
+  }
+}
+
+/* ==========================================================================
+   3. RECIBOS PARA IMPRESSÃO E PDF
+   ========================================================================== */
+.recibos-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.recibo-sheet {
+  background: #fff;
+  border: 2px solid #1e293b;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 840px;
+  width: 100%;
+  margin: 0 auto;
+  color: #000;
+}
+
+.recibo-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 2px solid #1e293b;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.recibo-top h2 {
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.recibo-valor-box {
+  border: 2px solid #000;
+  padding: 8px 14px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.recibo-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 0.92rem;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.recibo-assinatura {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.recibo-assinatura .linha {
+  width: 340px;
+  max-width: 90%;
+  border-top: 1.5px solid #000;
+  padding-top: 6px;
+  margin-top: 32px;
+  font-weight: 700;
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print,
+  .adm-topbar,
+  .adm-nav,
+  .recibo-controls {
+    display: none !important;
+  }
+  .adm-container {
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
+  }
+  .recibo-sheet {
+    page-break-after: always;
+    border: 1.5px solid #000;
+    box-shadow: none;
+    margin-bottom: 20px;
+  }
+}
