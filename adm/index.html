@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrativo - Controle de Serviços Extras</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <!-- TELA DE LOGIN DO ADMINISTRADOR -->
+  <main id="adm-login-view" class="mobile-shell" style="justify-content: center;">
+    <section class="mobile-card">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="display:inline-flex; width:54px; height:54px; border-radius:14px; background:#0f172a; color:#fff; align-items:center; justify-content:center; font-weight:800; font-size:1.2rem; margin-bottom:10px;">
+          ADM
+        </div>
+        <h1 style="font-size: 1.25rem; font-weight: 800;">Módulo Administrativo</h1>
+        <p style="font-size: 0.86rem; color: #475569; margin-top: 4px;">Controle de Serviços Extras, Fechamentos e Recibos</p>
+      </div>
+
+      <form id="form-adm-login">
+        <div class="form-group">
+          <label class="form-label" for="adm-user">Login Administrador</label>
+          <input type="text" id="adm-user" class="form-control" placeholder="Ex: admin" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adm-pass">Senha</label>
+          <input type="password" id="adm-pass" class="form-control" placeholder="Digite sua senha" required autocomplete="current-password" />
+        </div>
+        <div id="adm-login-error" class="toast-feedback error hidden" style="margin-bottom: 12px;"></div>
+        <button type="submit" class="btn-salvar-unico" style="background: #0f172a;">ACESSAR PAINEL ADM</button>
+      </form>
+    </section>
+  </main>
+
+  <!-- AMBIENTE ADMINISTRATIVO COMPLETO (OTIMIZADO PARA CELULAR E COMPUTADOR) -->
+  <div id="adm-app-view" class="adm-layout hidden">
+    <header class="adm-topbar no-print">
+      <div class="adm-brand">
+        <h1>CONTROLE DE SERVIÇOS EXTRAS — ADM</h1>
+        <span id="badge-cloud-status" class="cloud-badge local">Modo Local</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 0.82rem; color: #cbd5e1;">Admin: <strong id="adm-user-name" style="color:#fff;">-</strong></span>
+        <button type="button" id="btn-sync-now" class="btn btn-sm btn-outline" style="background:#1e293b; color:#fff; border-color:#475569;">Atualizar</button>
+        <button type="button" id="btn-adm-logout" class="btn btn-sm btn-danger">Sair</button>
+      </div>
+    </header>
+
+    <nav class="adm-nav no-print">
+      <button type="button" class="adm-tab-btn active" data-tab="tab-lancamentos">1. Lançamentos</button>
+      <button type="button" class="adm-tab-btn" data-tab="tab-fechamentos">2. Fechamentos</button>
+      <button type="button" class="adm-tab-btn" data-tab="tab-recibos">3. Recibos (PDF)</button>
+      <button type="button" class="adm-tab-btn" data-tab="tab-relatorios">4. Relatórios (.XLSX)</button>
+      <button type="button" class="adm-tab-btn" data-tab="tab-cadastros">5. Cadastros e Valores</button>
+      <button type="button" class="adm-tab-btn" data-tab="tab-armazenamento">6. Retenção (30d) & Nuvem</button>
+    </nav>
+
+    <main class="adm-container">
+      <!-- ABA 1: CONSULTA E GESTÃO DE LANÇAMENTOS -->
+      <section id="tab-lancamentos" class="adm-tab-pane">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Ativo (Filtro)</div>
+            <div class="kpi-value" id="kpi-total-geral">R$ 0,00</div>
+            <div class="kpi-sub" id="kpi-qtd-geral">0 serviços</div>
+          </div>
+          <div class="kpi-card pending">
+            <div class="kpi-label">Valores Pendentes</div>
+            <div class="kpi-value" id="kpi-total-pendente">R$ 0,00</div>
+            <div class="kpi-sub" id="kpi-qtd-pendente">0 pendentes</div>
+          </div>
+          <div class="kpi-card paid">
+            <div class="kpi-label">Valores Pagos</div>
+            <div class="kpi-value" id="kpi-total-pago">R$ 0,00</div>
+            <div class="kpi-sub" id="kpi-qtd-pago">0 pagos</div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">Consultar e Gerenciar Lançamentos</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" id="btn-quitar-selecionados" class="btn btn-success btn-sm">Quitar Pendentes Filtrados</button>
+              <button type="button" id="btn-export-lancamentos-xlsx" class="btn btn-outline btn-sm">Exportar (.xlsx)</button>
+            </div>
+          </div>
+
+          <div class="filters-grid">
+            <div>
+              <label class="form-label">Data Inicial</label>
+              <input type="date" id="filtro-data-ini" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Data Final</label>
+              <input type="date" id="filtro-data-fim" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Empresa</label>
+              <select id="filtro-empresa" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Colaborador</label>
+              <select id="filtro-colaborador" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Pagamento</label>
+              <select id="filtro-pagamento" class="form-control">
+                <option value="TODOS">Todos</option>
+                <option value="PENDENTE">Pendentes</option>
+                <option value="PAGO">Pagos</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Situação</label>
+              <select id="filtro-situacao" class="form-control">
+                <option value="ATIVO">Somente Ativos</option>
+                <option value="CANCELADO">Cancelados</option>
+                <option value="TODOS">Todos (Ativos + Cancelados)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Colaborador / Cargo</th>
+                  <th>Empresa</th>
+                  <th>Turno</th>
+                  <th>Motivo</th>
+                  <th>Solicitante / Lançado por</th>
+                  <th>Valor</th>
+                  <th>Pagamento</th>
+                  <th>Situação</th>
+                  <th>Ações / Histórico</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-lancamentos"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABA 2: FECHAMENTOS (SEMANAL, QUINZENAL, MENSAL) E ACUMULADOS -->
+      <section id="tab-fechamentos" class="adm-tab-pane hidden">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">Fechamentos de Período (Semanal, Quinzenal ou Mensal)</h2>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-outline btn-sm" data-periodo="SEMANA_ATUAL">Semana Atual</button>
+              <button type="button" class="btn btn-outline btn-sm" data-periodo="QUINZENA_1">1ª Quinzena (01-15)</button>
+              <button type="button" class="btn btn-outline btn-sm" data-periodo="QUINZENA_2">2ª Quinzena (16-Fim)</button>
+              <button type="button" class="btn btn-outline btn-sm" data-periodo="MES_ATUAL">Mês Atual</button>
+              <button type="button" class="btn btn-outline btn-sm" data-periodo="TUDO">Todo o Período</button>
+            </div>
+          </div>
+
+          <div class="filters-grid">
+            <div>
+              <label class="form-label">Início do Fechamento</label>
+              <input type="date" id="fech-data-ini" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Fim do Fechamento</label>
+              <input type="date" id="fech-data-fim" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Filtrar Empresa</label>
+              <select id="fech-empresa" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Referência do Fechamento (Opcional)</label>
+              <input type="text" id="fech-referencia" class="form-control" placeholder="Ex: Fechamento 1ª Quinzena" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3 class="panel-title">Valores Acumulados por Colaborador</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th>Cargo</th>
+                  <th>Qtd. Serviços</th>
+                  <th>Pendente (R$)</th>
+                  <th>Pago (R$)</th>
+                  <th>Total Acumulado (R$)</th>
+                  <th>Ações de Pagamento</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-acumulado-colaborador"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3 class="panel-title">Valores Separados por Empresa</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Qtd. Serviços</th>
+                  <th>Pendente (R$)</th>
+                  <th>Pago (R$)</th>
+                  <th>Total da Empresa (R$)</th>
+                  <th>Ações de Pagamento</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-acumulado-empresa"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABA 3: RECIBOS INDIVIDUAIS POR COLABORADOR E POR EMPRESA -->
+      <section id="tab-recibos" class="adm-tab-pane hidden">
+        <div class="panel-card no-print">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Emissão de Recibos (Separados por Colaborador e por Empresa)</h2>
+              <p style="font-size:0.84rem; color:#475569; margin-top:2px;">
+                Se o colaborador trabalhou em duas empresas no período, o sistema gera dois recibos separados automaticamente.
+              </p>
+            </div>
+            <button type="button" id="btn-imprimir-todos-recibos" class="btn btn-primary">
+              Imprimir / Salvar Todos em PDF
+            </button>
+          </div>
+
+          <div class="filters-grid">
+            <div>
+              <label class="form-label">Data Inicial</label>
+              <input type="date" id="rec-data-ini" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Data Final</label>
+              <input type="date" id="rec-data-fim" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Colaborador</label>
+              <select id="rec-colaborador" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Empresa</label>
+              <select id="rec-empresa" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Status de Pagamento</label>
+              <select id="rec-status-pag" class="form-control">
+                <option value="TODOS">Todos os Ativos (Pendentes + Pagos)</option>
+                <option value="PENDENTE">Somente Pendentes</option>
+                <option value="PAGO">Somente Pagos</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="container-recibos" class="recibos-wrapper"></div>
+      </section>
+
+      <!-- ABA 4: RELATÓRIOS E EXPORTAÇÃO EXCEL (.XLSX) -->
+      <section id="tab-relatorios" class="adm-tab-pane hidden">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Relatórios Gerenciais e Exportação para Excel (.xlsx)</h2>
+              <p style="font-size:0.84rem; color:#475569;">Consulte pelo celular ou computador e exporte para planilha Excel.</p>
+            </div>
+            <button type="button" id="btn-export-pacote-completo" class="btn btn-success">
+              Baixar Excel Completo (Todas as Abas .xlsx)
+            </button>
+          </div>
+
+          <div class="filters-grid">
+            <div>
+              <label class="form-label">Data Inicial</label>
+              <input type="date" id="rel-data-ini" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Data Final</label>
+              <input type="date" id="rel-data-fim" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label">Empresa</label>
+              <select id="rel-empresa" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Tipo de Relatório na Tela</label>
+              <select id="rel-tipo-visao" class="form-control">
+                <option value="COLABORADOR">1. Total por Colaborador</option>
+                <option value="EMPRESA">2. Total por Empresa</option>
+                <option value="PERIODO">3. Serviços Realizados por Período</option>
+                <option value="PENDENTES">4. Valores Pendentes</option>
+                <option value="PAGOS">5. Valores Pagos</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+            <button type="button" id="btn-export-relatorio-atual" class="btn btn-primary btn-sm">
+              Exportar Relatório Selecionado (.xlsx)
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead id="thead-relatorio"></thead>
+              <tbody id="tbody-relatorio"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABA 5: CADASTROS E VALORES (SEM A ABA "QUEM SOLICITA", POIS QUEM LOGA É O SOLICITANTE) -->
+      <section id="tab-cadastros" class="adm-tab-pane hidden">
+        <div class="subtabs-bar">
+          <button type="button" class="btn btn-primary btn-sm cad-subtab-btn" data-subtab="sub-valores">Tabela de Valores</button>
+          <button type="button" class="btn btn-outline btn-sm cad-subtab-btn" data-subtab="sub-colaboradores">Colaboradores</button>
+          <button type="button" class="btn btn-outline btn-sm cad-subtab-btn" data-subtab="sub-empresas">Empresas</button>
+          <button type="button" class="btn btn-outline btn-sm cad-subtab-btn" data-subtab="sub-cargos">Cargos</button>
+          <button type="button" class="btn btn-outline btn-sm cad-subtab-btn" data-subtab="sub-usuarios">Autorizados / Solicitantes</button>
+        </div>
+
+        <!-- 5.1 TABELA DE VALORES (EMPRESA + CARGO + VALOR) -->
+        <div id="sub-valores" class="cad-subpane panel-card">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Tabela de Valores de Serviços Extras (Empresa + Cargo + Valor)</h3>
+              <p style="font-size:0.84rem; color:#475569;">Quando o solicitante escolhe o Colaborador e a Empresa no celular, o valor cadastrado aqui é preenchido automaticamente.</p>
+            </div>
+          </div>
+          <form id="form-cad-valor" class="filters-grid" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #e2e8f0;">
+            <input type="hidden" id="val-id" />
+            <div>
+              <label class="form-label">Empresa</label>
+              <select id="val-empresa" class="form-control" required></select>
+            </div>
+            <div>
+              <label class="form-label">Cargo</label>
+              <select id="val-cargo" class="form-control" required></select>
+            </div>
+            <div>
+              <label class="form-label">Valor do Serviço Extra (R$)</label>
+              <input type="number" id="val-valor" class="form-control" step="0.01" min="0" placeholder="Ex: 150.00" required />
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="submit" class="btn btn-success" style="width:100%;">Salvar Valor</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Cargo</th>
+                  <th>Valor Automático (R$)</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-valores"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5.2 COLABORADORES -->
+        <div id="sub-colaboradores" class="cad-subpane panel-card hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Cadastro de Colaboradores (Nome e Cargo)</h3>
+          </div>
+          <form id="form-cad-colaborador" class="filters-grid" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #e2e8f0;">
+            <input type="hidden" id="col-id" />
+            <div>
+              <label class="form-label">Nome Completo</label>
+              <input type="text" id="col-nome" class="form-control" placeholder="Nome do colaborador" required />
+            </div>
+            <div>
+              <label class="form-label">Cargo</label>
+              <select id="col-cargo" class="form-control" required></select>
+            </div>
+            <div>
+              <label class="form-label">CPF / Documento (Opcional)</label>
+              <input type="text" id="col-doc" class="form-control" placeholder="000.000.000-00" />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-success" style="width:100%;">Salvar Colaborador</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Documento</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-colaboradores"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5.3 EMPRESAS -->
+        <div id="sub-empresas" class="cad-subpane panel-card hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Cadastro de Empresas</h3>
+          </div>
+          <form id="form-cad-empresa" class="filters-grid" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #e2e8f0;">
+            <input type="hidden" id="emp-id" />
+            <div>
+              <label class="form-label">Nome da Empresa</label>
+              <input type="text" id="emp-nome" class="form-control" placeholder="Nome da empresa / unidade" required />
+            </div>
+            <div>
+              <label class="form-label">CNPJ / Identificação (Opcional)</label>
+              <input type="text" id="emp-cnpj" class="form-control" placeholder="00.000.000/0001-00" />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-success" style="width:100%;">Salvar Empresa</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>CNPJ</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-empresas"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5.4 CARGOS -->
+        <div id="sub-cargos" class="cad-subpane panel-card hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Cadastro de Cargos / Funções</h3>
+          </div>
+          <form id="form-cad-cargo" class="filters-grid" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #e2e8f0;">
+            <input type="hidden" id="crg-id" />
+            <div>
+              <label class="form-label">Nome do Cargo</label>
+              <input type="text" id="crg-nome" class="form-control" placeholder="Ex: Garçom, Cozinheiro, Segurança..." required />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-success" style="width:100%;">Salvar Cargo</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Cargo</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-cargos"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5.5 AUTORIZADOS A REALIZAR LANÇAMENTOS (SOLICITANTES) E ADMINISTRADORES -->
+        <div id="sub-usuarios" class="cad-subpane panel-card hidden">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Pessoas Autorizadas a Solicitar / Lançar Serviços (Login e Senha)</h3>
+              <p style="font-size:0.84rem; color:#475569;">Quem estiver logado no celular ao fazer o lançamento é identificado automaticamente como o solicitante do serviço.</p>
+            </div>
+          </div>
+          <form id="form-cad-usuario" class="filters-grid" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #e2e8f0;">
+            <input type="hidden" id="usr-id" />
+            <div>
+              <label class="form-label">Nome do Solicitante / Usuário</label>
+              <input type="text" id="usr-nome" class="form-control" placeholder="Ex: João Encarregado" required />
+            </div>
+            <div>
+              <label class="form-label">Login de Acesso</label>
+              <input type="text" id="usr-login" class="form-control" placeholder="Ex: joao" required />
+            </div>
+            <div>
+              <label class="form-label">Senha</label>
+              <input type="text" id="usr-senha" class="form-control" placeholder="Senha de acesso" required />
+            </div>
+            <div>
+              <label class="form-label">Módulo Permitido</label>
+              <select id="usr-perfil" class="form-control">
+                <option value="LANCADOR">Módulo Lançamentos (Celular)</option>
+                <option value="ADM">Administrador Completo (ADM + Celular)</option>
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="btn btn-success" style="width:100%;">Salvar Usuário</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table mobile-cards">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Login</th>
+                  <th>Senha</th>
+                  <th>Módulo / Perfil</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-usuarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABA 6: ARMAZENAMENTO (30 DIAS) E BANCO DE DADOS SUPABASE -->
+      <section id="tab-armazenamento" class="adm-tab-pane hidden">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Política de Armazenamento de 30 Dias e Arquivamento Seguro</h2>
+              <p style="font-size:0.84rem; color:#475569;">
+                Mantém os dados operacionais por 30 dias contados da inclusão. Pagamentos pendentes e registros marcados para conservação legal/financeira <strong>nunca são excluídos</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Registros com +30 Dias (Pagos/Finalizados)</div>
+              <div class="kpi-value" id="ret-qtd-expurgaveis">0</div>
+              <div class="kpi-sub">Elegíveis para arquivar e limpar</div>
+            </div>
+            <div class="kpi-card pending">
+              <div class="kpi-label">Protegidos (+30 Dias Pendentes ou Retenção Legal)</div>
+              <div class="kpi-value" id="ret-qtd-protegidos">0</div>
+              <div class="kpi-sub">Bloqueados contra exclusão</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+            <button type="button" id="btn-arquivar-30d-xlsx" class="btn btn-primary">
+              1. Exportar Dados (> 30 dias) para Excel (.xlsx)
+            </button>
+            <button type="button" id="btn-limpar-30d" class="btn btn-danger" disabled>
+              2. Excluir Dados Operacionais Já Exportados (> 30 dias)
+            </button>
+          </div>
+          <p id="ret-msg-status" style="font-size:0.82rem; color:#475569; margin-top:8px;">
+            Por segurança, o botão de exclusão só é liberado após você exportar o arquivo Excel de backup.
+          </p>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Conexão com Banco de Dados na Nuvem (Supabase)</h2>
+              <p style="font-size:0.84rem; color:#475569;">
+                Conecte ao seu projeto gratuito no Supabase para sincronizar celulares e computadores em tempo real 24h por dia.
+              </p>
+            </div>
+          </div>
+
+          <form id="form-supabase-config" class="filters-grid">
+            <div>
+              <label class="form-label">Project URL (Supabase)</label>
+              <input type="url" id="supa-url" class="form-control" placeholder="https://seu-projeto.supabase.co" />
+            </div>
+            <div>
+              <label class="form-label">Anon Public Key (Supabase)</label>
+              <input type="text" id="supa-key" class="form-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." />
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary">Salvar e Conectar</button>
+              <button type="button" id="btn-push-cloud" class="btn btn-success">Enviar Cadastros Atuais p/ Nuvem</button>
+            </div>
+          </form>
+          <div id="supa-feedback" class="toast-feedback hidden"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO DE LANÇAMENTO (MANTENDO HISTÓRICO) -->
+  <div id="modal-editar-lancamento" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="panel-header">
+        <h3 class="panel-title">Alterar Lançamento (Mantém Histórico de Auditoria)</h3>
+        <button type="button" id="btn-fechar-modal-editar" class="btn btn-outline btn-sm">Fechar</button>
+      </div>
+      <form id="form-editar-lancamento">
+        <input type="hidden" id="edit-lnc-id" />
+        <div class="form-group">
+          <label class="form-label">Colaborador</label>
+          <select id="edit-lnc-colaborador" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Empresa</label>
+          <select id="edit-lnc-empresa" class="form-control" required></select>
+        </div>
+        <div class="filters-grid">
+          <div>
+            <label class="form-label">Data do Trabalho</label>
+            <input type="date" id="edit-lnc-data" class="form-control" required />
+          </div>
+          <div>
+            <label class="form-label">Turno</label>
+            <select id="edit-lnc-turno" class="form-control" required>
+              <option value="Manhã">Manhã</option>
+              <option value="Tarde">Tarde</option>
+              <option value="Noite">Noite</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Valor (R$)</label>
+            <input type="number" id="edit-lnc-valor" class="form-control" step="0.01" min="0.01" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motivo da Solicitação</label>
+          <input type="text" id="edit-lnc-motivo" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; font-weight:600; cursor:pointer;">
+            <input type="checkbox" id="edit-lnc-conservar" />
+            Conservar por obrigação legal/financeira (proteger da exclusão de 30 dias)
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motivo da Alteração (Registrado no Histórico)</label>
+          <input type="text" id="edit-lnc-justificativa" class="form-control" placeholder="Ex: Correção de turno ou valor acordado" required />
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+          <button type="submit" class="btn btn-primary">Salvar Alteração no Histórico</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE HISTÓRICO DO LANÇAMENTO -->
+  <div id="modal-historico" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="panel-header">
+        <h3 class="panel-title">Histórico Completo do Lançamento</h3>
+        <button type="button" id="btn-fechar-modal-historico" class="btn btn-outline btn-sm">Fechar</button>
+      </div>
+      <div id="conteudo-historico" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/adm.js"></script>
+</body>
+</html>
