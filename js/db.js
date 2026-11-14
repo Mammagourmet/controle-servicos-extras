@@ -6,7 +6,7 @@
 (function () {
   const STORAGE_KEYS = {
     SUPABASE_CREDS: "cse_supabase_creds_v1",
-    DATA_STORE: "cse_datastore_v1",
+    DATA_STORE: "cse_datastore_v2",
     SESSION_LANCADOR: "cse_session_lancador_v1",
     SESSION_ADM: "cse_session_adm_v1"
   };
@@ -17,35 +17,12 @@
   function getInitialStore() {
     const now = new Date().toISOString();
     return {
-      empresas: [
-        { id: "emp_1", nome: "Matriz - Unidade Central", cnpj: "12.345.678/0001-90", ativo: true, criado_em: now },
-        { id: "emp_2", nome: "Filial Sul - Eventos & Serviços", cnpj: "12.345.678/0002-71", ativo: true, criado_em: now }
-      ],
-      cargos: [
-        { id: "crg_1", nome: "Auxiliar Operacional", ativo: true, criado_em: now },
-        { id: "crg_2", nome: "Atendente / Garçom", ativo: true, criado_em: now },
-        { id: "crg_3", nome: "Cozinheiro(a)", ativo: true, criado_em: now },
-        { id: "crg_4", nome: "Segurança / Portaria", ativo: true, criado_em: now }
-      ],
-      colaboradores: [
-        { id: "col_1", nome: "Carlos Eduardo Silva", cargo_id: "crg_2", cargo_nome: "Atendente / Garçom", documento: "123.456.789-00", telefone: "(11) 99999-1111", ativo: true, criado_em: now },
-        { id: "col_2", nome: "Fernanda Oliveira Santos", cargo_id: "crg_3", cargo_nome: "Cozinheiro(a)", documento: "234.567.890-11", telefone: "(11) 99999-2222", ativo: true, criado_em: now },
-        { id: "col_3", nome: "Marcos Vinícius Souza", cargo_id: "crg_1", cargo_nome: "Auxiliar Operacional", documento: "345.678.901-22", telefone: "(11) 99999-3333", ativo: true, criado_em: now }
-      ],
-      tabela_valores: [
-        { id: "val_1", empresa_id: "emp_1", empresa_nome: "Matriz - Unidade Central", cargo_id: "crg_1", cargo_nome: "Auxiliar Operacional", valor: 120.00, atualizado_em: now },
-        { id: "val_2", empresa_id: "emp_1", empresa_nome: "Matriz - Unidade Central", cargo_id: "crg_2", cargo_nome: "Atendente / Garçom", valor: 150.00, atualizado_em: now },
-        { id: "val_3", empresa_id: "emp_1", empresa_nome: "Matriz - Unidade Central", cargo_id: "crg_3", cargo_nome: "Cozinheiro(a)", valor: 180.00, atualizado_em: now },
-        { id: "val_4", empresa_id: "emp_1", empresa_nome: "Matriz - Unidade Central", cargo_id: "crg_4", cargo_nome: "Segurança / Portaria", valor: 160.00, atualizado_em: now },
-        { id: "val_5", empresa_id: "emp_2", empresa_nome: "Filial Sul - Eventos & Serviços", cargo_id: "crg_1", cargo_nome: "Auxiliar Operacional", valor: 130.00, atualizado_em: now },
-        { id: "val_6", empresa_id: "emp_2", empresa_nome: "Filial Sul - Eventos & Serviços", cargo_id: "crg_2", cargo_nome: "Atendente / Garçom", valor: 165.00, atualizado_em: now },
-        { id: "val_7", empresa_id: "emp_2", empresa_nome: "Filial Sul - Eventos & Serviços", cargo_id: "crg_3", cargo_nome: "Cozinheiro(a)", valor: 195.00, atualizado_em: now },
-        { id: "val_8", empresa_id: "emp_2", empresa_nome: "Filial Sul - Eventos & Serviços", cargo_id: "crg_4", cargo_nome: "Segurança / Portaria", valor: 175.00, atualizado_em: now }
-      ],
+      empresas: [],
+      cargos: [],
+      colaboradores: [],
+      tabela_valores: [],
       usuarios: [
-        { id: "usr_admin_1", nome: "Administrador Geral", login: "admin", senha: "123456", perfil: "ADM", ativo: true, criado_em: now },
-        { id: "usr_lanc_1", nome: "João Encarregado", login: "joao", senha: "123", perfil: "LANCADOR", ativo: true, criado_em: now },
-        { id: "usr_lanc_2", nome: "Maria Supervisora", login: "maria", senha: "123", perfil: "LANCADOR", ativo: true, criado_em: now }
+        { id: "usr_admin_1", nome: "ANDRE SILVA", login: "andre", senha: "982185", perfil: "ADM", ativo: true, criado_em: now }
       ],
       lancamentos: []
     };
@@ -119,6 +96,9 @@
   }
 
   async function initDatabase() {
+    // Remove o cache antigo v1 que continha dados de demonstração
+    try { localStorage.removeItem("cse_datastore_v1"); } catch (e) {}
+
     const creds = getSupabaseCredentials();
     if (creds.url && creds.key && window.supabase && typeof window.supabase.createClient === "function") {
       try {
@@ -126,7 +106,7 @@
         const { data, error } = await supabaseClient.from("usuarios").select("id").limit(1);
         if (!error) {
           isCloudConnected = true;
-          await syncBidirecional();
+          await pullAllFromCloud();
           return { mode: "SUPABASE", connected: true, url: creds.url };
         } else {
           console.warn("Aviso ao conectar Supabase (usando cache local):", error.message);
@@ -376,7 +356,7 @@
 
   async function loginUsuario(login, senha, perfilEsperado) {
     if (isCloudConnected) {
-      await syncBidirecional();
+      await pullAllFromCloud();
     }
     const store = loadLocalStore();
     const loginClean = String(login || "").trim().toLowerCase();
