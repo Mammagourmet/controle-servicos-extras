@@ -1,5 +1,6 @@
 // ============================================================================
 // MÓDULO ADMINISTRATIVO (ADM) - LÓGICA COMPLETA (RESPONSIVO CELULAR E PC)
+// Inclui Relatório Analítico Completo em PDF Formato Paisagem + Excel (.xlsx)
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -46,6 +47,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     return d.toLocaleString("pt-BR");
   }
 
+  function obterDocumentoColaborador(colaboradorId) {
+    const store = window.DB.loadLocalStore();
+    const c = store.colaboradores.find(x => x.id === colaboradorId);
+    return (c && c.documento) ? c.documento : "-";
+  }
+
   // ==========================================================================
   // SESSÃO E NAVEGAÇÃO DE ABAS
   // ==========================================================================
@@ -90,7 +97,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     carregarTudoAdm();
   });
 
-  // Troca de Abas Principais
   document.querySelectorAll(".adm-tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".adm-tab-btn").forEach(b => b.classList.remove("active"));
@@ -102,7 +108,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // Troca de Sub-Abas de Cadastros
   document.querySelectorAll(".cad-subtab-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".cad-subtab-btn").forEach(b => {
@@ -143,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       el.value = val;
     });
 
-    ["filtro-colaborador", "rec-colaborador"].forEach(id => {
+    ["filtro-colaborador", "rec-colaborador", "rel-colaborador"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       const val = el.value;
@@ -228,13 +233,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       const cancelado = l.status_lancamento === "CANCELADO";
       const pago = l.status_pagamento === "PAGO";
       const nomeSolicitante = l.lancado_por_nome || l.solicitante_nome || "-";
+      const docColab = obterDocumentoColaborador(l.colaborador_id);
       return `
         <tr style="${cancelado ? "opacity:0.6; background:#fef2f2;" : ""}">
           <td data-label="Data"><strong>${formatDataBR(l.data_trabalho)}</strong></td>
           <td data-label="Colaborador">
             <div>
               <strong>${l.colaborador_nome}</strong>
-              <div style="font-size:0.76rem; color:#64748b;">${l.cargo_nome || "-"}</div>
+              <div style="font-size:0.76rem; color:#64748b;">${l.cargo_nome || "-"} | Doc: ${docColab}</div>
             </div>
           </td>
           <td data-label="Empresa">${l.empresa_nome}</td>
@@ -335,6 +341,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       lista.map(l => ({
         Data: formatDataBR(l.data_trabalho),
         Colaborador: l.colaborador_nome,
+        Documento: obterDocumentoColaborador(l.colaborador_id),
         Cargo: l.cargo_nome,
         Empresa: l.empresa_nome,
         Turno: l.turno,
@@ -475,7 +482,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       return true;
     });
 
-    // Agrupar por Colaborador
     const mapColab = new Map();
     for (const l of ativos) {
       if (!mapColab.has(l.colaborador_id)) {
@@ -483,6 +489,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           id: l.colaborador_id,
           nome: l.colaborador_nome,
           cargo: l.cargo_nome,
+          doc: obterDocumentoColaborador(l.colaborador_id),
           qtd: 0,
           pendente: 0,
           pago: 0,
@@ -511,7 +518,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       : arrColab.map(c => `
         <tr>
           <td data-label="Colaborador"><strong>${c.nome}</strong></td>
-          <td data-label="Cargo">${c.cargo}</td>
+          <td data-label="Cargo / Doc">${c.cargo} <span style="font-size:0.76rem; color:#64748b;">(Doc: ${c.doc})</span></td>
           <td data-label="Qtd. Serviços">${c.qtd}</td>
           <td data-label="Pendente" style="color:#b45309; font-weight:700;">${formatMoeda(c.pendente)}</td>
           <td data-label="Pago" style="color:#15803d; font-weight:700;">${formatMoeda(c.pago)}</td>
@@ -533,7 +540,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         </tr>
       `).join("");
 
-    // Agrupar por Empresa
     const mapEmp = new Map();
     for (const l of ativos) {
       if (!mapEmp.has(l.empresa_id)) {
@@ -661,7 +667,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!gruposRecibo.has(chave)) {
         gruposRecibo.set(chave, {
           chave,
+          colaborador_id: l.colaborador_id,
           colaborador_nome: l.colaborador_nome,
+          documento: obterDocumentoColaborador(l.colaborador_id),
           cargo_nome: l.cargo_nome,
           empresa_nome: l.empresa_nome,
           itens: [],
@@ -705,9 +713,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         <div class="recibo-meta">
           <div><strong>Colaborador:</strong> ${rec.colaborador_nome}</div>
+          <div><strong>Documento (CPF/RG):</strong> ${rec.documento}</div>
           <div><strong>Cargo / Função:</strong> ${rec.cargo_nome || "-"}</div>
           <div><strong>Empresa Tomadora:</strong> ${rec.empresa_nome}</div>
-          <div><strong>Quantidade de Serviços:</strong> ${rec.itens.length}</div>
         </div>
 
         <div class="table-responsive">
@@ -746,7 +754,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         <div class="recibo-assinatura">
           <div style="font-size:0.88rem; margin-bottom:8px;">Data de emissão: ${dataEmissao}</div>
-          <div class="linha">${rec.colaborador_nome}<br/><span style="font-weight:400; font-size:0.8rem;">Assinatura do Colaborador (${rec.cargo_nome})</span></div>
+          <div class="linha">${rec.colaborador_nome} — Doc: ${rec.documento}<br/><span style="font-weight:400; font-size:0.8rem;">Assinatura do Colaborador (${rec.cargo_nome})</span></div>
         </div>
       </article>
     `).join("");
@@ -766,31 +774,43 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ==========================================================================
-  // ABA 4: RELATÓRIOS E EXPORTAÇÃO EXCEL (.XLSX)
+  // ABA 4: RELATÓRIOS COMPLETOS (PDF FORMATO PAISAGEM + EXCEL .XLSX)
   // ==========================================================================
-  ["rel-data-ini", "rel-data-fim", "rel-empresa", "rel-tipo-visao"].forEach(id => {
-    document.getElementById(id).addEventListener("change", renderAbaRelatorios);
+  ["rel-data-ini", "rel-data-fim", "rel-empresa", "rel-colaborador", "rel-pagamento", "rel-tipo-visao"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", renderAbaRelatorios);
   });
 
-  function obterDadosRelatorios() {
+  function obterLancamentosBaseRelatorio() {
     const store = window.DB.loadLocalStore();
     const dtIni = document.getElementById("rel-data-ini").value;
     const dtFim = document.getElementById("rel-data-fim").value;
     const empId = document.getElementById("rel-empresa").value;
+    const colId = document.getElementById("rel-colaborador").value;
+    const stPag = document.getElementById("rel-pagamento").value;
 
-    const ativos = store.lancamentos.filter(l => {
-      if (l.status_lancamento !== "ATIVO") return false;
-      if (dtIni && l.data_trabalho < dtIni) return false;
-      if (dtFim && l.data_trabalho > dtFim) return false;
-      if (empId && l.empresa_id !== empId) return false;
-      return true;
-    }).sort((a, b) => (b.data_trabalho || "").localeCompare(a.data_trabalho || ""));
+    return store.lancamentos
+      .filter(l => {
+        if (l.status_lancamento !== "ATIVO") return false;
+        if (dtIni && l.data_trabalho < dtIni) return false;
+        if (dtFim && l.data_trabalho > dtFim) return false;
+        if (empId && l.empresa_id !== empId) return false;
+        if (colId && l.colaborador_id !== colId) return false;
+        if (stPag !== "TODOS" && l.status_pagamento !== stPag) return false;
+        return true;
+      })
+      .sort((a, b) => (a.data_trabalho || "").localeCompare(b.data_trabalho || ""));
+  }
+
+  function obterDadosRelatorios() {
+    const ativos = obterLancamentosBaseRelatorio();
 
     const mapCol = new Map();
     for (const l of ativos) {
       if (!mapCol.has(l.colaborador_id)) {
         mapCol.set(l.colaborador_id, {
           Colaborador: l.colaborador_nome,
+          Documento: obterDocumentoColaborador(l.colaborador_id),
           Cargo: l.cargo_nome,
           "Qtd Serviços": 0,
           "Total Pendente (R$)": 0,
@@ -826,18 +846,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const formatarLinhaDetalhe = (l) => ({
-      Data: formatDataBR(l.data_trabalho),
-      Colaborador: l.colaborador_nome,
+      "Data do Serviço": formatDataBR(l.data_trabalho),
+      "Quem Realizou (Colaborador)": l.colaborador_nome,
+      Documento: obterDocumentoColaborador(l.colaborador_id),
       Cargo: l.cargo_nome,
       Empresa: l.empresa_nome,
-      Turno: l.turno,
+      "Turno Realizado": l.turno,
       Motivo: l.motivo,
-      "Solicitante / Lançado Por": l.lancado_por_nome || l.solicitante_nome,
-      "Valor (R$)": Number(l.valor || 0),
-      "Status Pagamento": l.status_pagamento
+      Solicitante: l.lancado_por_nome || l.solicitante_nome,
+      Pagamento: l.status_pagamento,
+      "Valor (R$)": Number(l.valor || 0)
     });
 
+    const totalGeral = ativos.reduce((acc, l) => acc + Number(l.valor || 0), 0);
+    const totalPago = ativos.filter(l => l.status_pagamento === "PAGO").reduce((acc, l) => acc + Number(l.valor || 0), 0);
+    const totalPendente = ativos.filter(l => l.status_pagamento === "PENDENTE").reduce((acc, l) => acc + Number(l.valor || 0), 0);
+
     return {
+      rawAtivos: ativos,
+      resumo: {
+        qtd: ativos.length,
+        totalGeral,
+        totalPago,
+        totalPendente
+      },
       COLABORADOR: Array.from(mapCol.values()),
       EMPRESA: Array.from(mapEmp.values()),
       PERIODO: ativos.map(formatarLinhaDetalhe),
@@ -852,6 +884,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const linhas = pacotes[tipo] || [];
     const thead = document.getElementById("thead-relatorio");
     const tbody = document.getElementById("tbody-relatorio");
+
+    // Atualiza o quadro resumo inferior com o valor total dos serviços no período solicitado
+    document.getElementById("rel-valor-total-periodo").textContent = formatMoeda(pacotes.resumo.totalGeral);
+    document.getElementById("rel-resumo-detalhe").innerHTML =
+      `<strong>${pacotes.resumo.qtd}</strong> serviços no período | ` +
+      `Pago: <strong style="color:#15803d;">${formatMoeda(pacotes.resumo.totalPago)}</strong> | ` +
+      `Pendente: <strong style="color:#b45309;">${formatMoeda(pacotes.resumo.totalPendente)}</strong>`;
 
     if (linhas.length === 0) {
       thead.innerHTML = "";
@@ -873,6 +912,150 @@ document.addEventListener("DOMContentLoaded", async () => {
       </tr>
     `).join("");
   }
+
+  // Geração do Relatório Analítico Completo em PDF e Formato Paisagem
+  document.getElementById("btn-export-relatorio-pdf-paisagem").addEventListener("click", () => {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("A biblioteca PDF ainda está carregando. Tente novamente em instantes.");
+      return;
+    }
+
+    const pacotes = obterDadosRelatorios();
+    const ativos = pacotes.rawAtivos;
+    if (ativos.length === 0) {
+      alert("Não há serviços registrados no período/filtro selecionado para gerar o PDF.");
+      return;
+    }
+
+    const dtIni = document.getElementById("rel-data-ini").value;
+    const dtFim = document.getElementById("rel-data-fim").value;
+    const selEmp = document.getElementById("rel-empresa");
+    const selCol = document.getElementById("rel-colaborador");
+
+    const periodoTexto = (dtIni || dtFim)
+      ? `${dtIni ? formatDataBR(dtIni) : "Início"} até ${dtFim ? formatDataBR(dtFim) : "Hoje"}`
+      : "Todo o Período Registrado";
+    const empresaTexto = selEmp.value ? selEmp.options[selEmp.selectedIndex].text : "Todas as Empresas";
+    const colabTexto = selCol.value ? selCol.options[selCol.selectedIndex].text : "Todos os Colaboradores";
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4"
+    });
+
+    // Cabeçalho do Relatório Paisagem
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text("RELATÓRIO COMPLETO DE SERVIÇOS EXTRAS REALIZADOS", 14, 15);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Período Solicitado: ${periodoTexto}   |   Empresa: ${empresaTexto}   |   Colaborador: ${colabTexto}`, 14, 21);
+    doc.text(`Emitido em: ${new Date().toLocaleString("pt-BR")}   |   Quantidade de Serviços: ${pacotes.resumo.qtd}`, 14, 26);
+
+    // Linhas detalhadas conforme solicitado:
+    // Data do serviço, Nome de quem realizou (+ Documento e Cargo), Empresa, Motivo, Turno realizado, Valor e Total ao final
+    const bodyRows = ativos.map(l => [
+      formatDataBR(l.data_trabalho),
+      l.colaborador_nome,
+      obterDocumentoColaborador(l.colaborador_id),
+      l.cargo_nome || "-",
+      l.empresa_nome,
+      l.turno,
+      l.motivo,
+      l.lancado_por_nome || l.solicitante_nome || "-",
+      l.status_pagamento,
+      formatMoeda(l.valor)
+    ]);
+
+    doc.autoTable({
+      startY: 31,
+      head: [[
+        "Data Serviço",
+        "Quem Realizou (Colaborador)",
+        "Documento",
+        "Cargo",
+        "Empresa",
+        "Turno",
+        "Motivo da Solicitação",
+        "Solicitante",
+        "Situação",
+        "Valor (R$)"
+      ]],
+      body: bodyRows,
+      foot: [[
+        { content: `VALOR TOTAL DOS SERVIÇOS NO PERÍODO SOLICITADO (${pacotes.resumo.qtd} serviços):`, colSpan: 9, styles: { halign: "right", fontStyle: "bold" } },
+        { content: formatMoeda(pacotes.resumo.totalGeral), styles: { halign: "right", fontStyle: "bold" } }
+      ]],
+      theme: "grid",
+      styles: {
+        fontSize: 8.5,
+        cellPadding: 2.5,
+        textColor: [15, 23, 42]
+      },
+      headStyles: {
+        fillColor: [30, 64, 175],
+        textColor: [255, 255, 255],
+        fontStyle: "bold"
+      },
+      footStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontSize: 9.5,
+        fontStyle: "bold"
+      },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        5: { cellWidth: 18 },
+        8: { cellWidth: 21 },
+        9: { halign: "right", cellWidth: 26, fontStyle: "bold" }
+      }
+    });
+
+    // Quadros Resumo no final do PDF Paisagem (Por Empresa e Situação Financeira)
+    let finalY = doc.lastAutoTable.finalY + 8;
+    if (finalY > 170) {
+      doc.addPage("a4", "landscape");
+      finalY = 16;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("RESUMO FINANCEIRO DO PERÍODO SOLICITADO (POR EMPRESA E SITUAÇÃO)", 14, finalY);
+
+    const rowsEmpresas = pacotes.EMPRESA.map(e => [
+      e.Empresa,
+      String(e["Qtd Serviços"]),
+      formatMoeda(e["Total Pendente (R$)"]),
+      formatMoeda(e["Total Pago (R$)"]),
+      formatMoeda(e["Total Geral (R$)"])
+    ]);
+
+    doc.autoTable({
+      startY: finalY + 3,
+      head: [["Empresa", "Qtd. Serviços", "Total Pendente", "Total Pago", "Valor Total no Período"]],
+      body: rowsEmpresas,
+      foot: [[
+        "TOTAL GERAL DO PERÍODO",
+        String(pacotes.resumo.qtd),
+        formatMoeda(pacotes.resumo.totalPendente),
+        formatMoeda(pacotes.resumo.totalPago),
+        formatMoeda(pacotes.resumo.totalGeral)
+      ]],
+      theme: "grid",
+      styles: { fontSize: 8.5, cellPadding: 2.2 },
+      headStyles: { fillColor: [51, 65, 85], textColor: [255, 255, 255] },
+      footStyles: { fillColor: [22, 101, 52], textColor: [255, 255, 255], fontStyle: "bold" }
+    });
+
+    const nomeArq = `relatorio_paisagem_servicos_extras_${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(nomeArq);
+  });
 
   function exportarParaExcel(dadosJson, nomeAba, nomeArquivo) {
     if (!window.XLSX) {
@@ -897,9 +1080,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const wb = window.XLSX.utils.book_new();
 
     const abas = [
+      { key: "PERIODO", title: "Servicos por Periodo" },
       { key: "COLABORADOR", title: "Total por Colaborador" },
       { key: "EMPRESA", title: "Total por Empresa" },
-      { key: "PERIODO", title: "Servicos por Periodo" },
       { key: "PENDENTES", title: "Valores Pendentes" },
       { key: "PAGOS", title: "Valores Pagos" }
     ];
@@ -919,7 +1102,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   function renderAbaCadastros() {
     const store = window.DB.loadLocalStore();
 
-    // 5.1 Tabela de Valores (Empresa + Cargo + Valor)
     document.getElementById("tbody-valores").innerHTML = store.tabela_valores.map(v => `
       <tr>
         <td data-label="Empresa"><strong>${v.empresa_nome}</strong></td>
@@ -934,7 +1116,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       </tr>
     `).join("");
 
-    // 5.2 Colaboradores
     document.getElementById("tbody-colaboradores").innerHTML = store.colaboradores.map(c => `
       <tr>
         <td data-label="Nome"><strong>${c.nome}</strong></td>
@@ -950,7 +1131,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       </tr>
     `).join("");
 
-    // 5.3 Empresas
     document.getElementById("tbody-empresas").innerHTML = store.empresas.map(e => `
       <tr>
         <td data-label="Empresa"><strong>${e.nome}</strong></td>
@@ -965,7 +1145,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       </tr>
     `).join("");
 
-    // 5.4 Cargos
     document.getElementById("tbody-cargos").innerHTML = store.cargos.map(c => `
       <tr>
         <td data-label="Cargo"><strong>${c.nome}</strong></td>
@@ -979,7 +1158,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       </tr>
     `).join("");
 
-    // 5.5 Usuários Autorizados (Solicitantes / Lançadores e Administradores)
     document.getElementById("tbody-usuarios").innerHTML = store.usuarios.map(u => `
       <tr>
         <td data-label="Nome"><strong>${u.nome}</strong></td>
@@ -997,7 +1175,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     `).join("");
   }
 
-  // Salvar Valor (Empresa + Cargo + Valor)
   document.getElementById("form-cad-valor").addEventListener("submit", async (e) => {
     e.preventDefault();
     const store = window.DB.loadLocalStore();
@@ -1045,7 +1222,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Salvar Colaborador
   document.getElementById("form-cad-colaborador").addEventListener("submit", async (e) => {
     e.preventDefault();
     const store = window.DB.loadLocalStore();
@@ -1088,7 +1264,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Salvar Empresa
   document.getElementById("form-cad-empresa").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("emp-id").value || window.DB.generateId("emp");
@@ -1122,7 +1297,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Salvar Cargo
   document.getElementById("form-cad-cargo").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("crg-id").value || window.DB.generateId("crg");
@@ -1154,7 +1328,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Salvar Usuário Autorizado (Solicitante / ADM)
   document.getElementById("form-cad-usuario").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("usr-id").value || window.DB.generateId("usr");
@@ -1215,6 +1388,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       "Data Trabalho": formatDataBR(l.data_trabalho),
       "Data Inclusão": formatDataHoraBR(l.criado_em),
       Colaborador: l.colaborador_nome,
+      Documento: obterDocumentoColaborador(l.colaborador_id),
       Cargo: l.cargo_nome,
       Empresa: l.empresa_nome,
       Turno: l.turno,
