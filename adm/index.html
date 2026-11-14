@@ -40,6 +40,11 @@
         </div>
         <div id="adm-login-error" class="toast-feedback error hidden" style="margin-bottom: 12px;"></div>
         <button type="submit" class="btn-salvar-unico" style="background: #0f172a;">ACESSAR PAINEL ADM</button>
+        <div style="text-align: center; margin-top: 12px;">
+          <button type="button" class="btn btn-outline btn-sm btn-instalar-app hidden" style="width: 100%; justify-content: center;">
+            📲 Salvar Aplicativo na Tela Inicial do Celular
+          </button>
+        </div>
       </form>
     </section>
   </main>
@@ -706,6 +711,7 @@
   <script src="../js/pwa.js"></script>
   <script>
     window.initPwaModule({
+      appKey: "adm_painel",
       shortName: "ADM Extras",
       iconUrl: "icon-adm-192.png",
       iconDownloadUrl: "icon-adm-512.png",
