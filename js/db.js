@@ -180,6 +180,28 @@
     }));
   }
 
+  // Mescla listas locais e da nuvem sem perder nenhum cadastro feito localmente
+  function mergeListsById(localList, cloudList) {
+    const map = new Map();
+    for (const item of (localList || [])) {
+      if (item && item.id) map.set(item.id, item);
+    }
+    for (const item of (cloudList || [])) {
+      if (item && item.id) {
+        // Se já existia localmente, preserva alterações locais ou mescla
+        const loc = map.get(item.id);
+        if (!loc) {
+          map.set(item.id, item);
+        } else {
+          const dtLoc = new Date(loc.atualizado_em || loc.criado_em || 0).getTime();
+          const dtCld = new Date(item.atualizado_em || item.criado_em || 0).getTime();
+          map.set(item.id, dtLoc > dtCld ? loc : item);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }
+
   async function initDatabase() {
     const creds = getSupabaseCredentials();
     if (creds.url && creds.key && window.supabase && typeof window.supabase.createClient === "function") {
@@ -188,7 +210,8 @@
         const { data, error } = await supabaseClient.from("usuarios").select("id").limit(1);
         if (!error) {
           isCloudConnected = true;
-          await pullAllFromCloud();
+          // Sincroniza enviando primeiro eventuais cadastros locais novos para a nuvem
+          await syncBidirecional();
           return { mode: "SUPABASE", connected: true, url: creds.url };
         } else {
           console.warn("Aviso ao conectar Supabase (usando cache local):", error.message);
@@ -203,6 +226,68 @@
     }
     loadLocalStore();
     return { mode: "LOCAL", connected: false };
+  }
+
+  // Envia cadastros locais novos para o Supabase e puxa os da nuvem
+  async function syncBidirecional() {
+    if (!supabaseClient || !isCloudConnected) return loadLocalStore();
+    try {
+      const local = loadLocalStore();
+      const [
+        resEmpresas,
+        resCargos,
+        resColaboradores,
+        resValores,
+        resUsuarios,
+        resLancamentos
+      ] = await Promise.all([
+        supabaseClient.from("empresas").select("*"),
+        supabaseClient.from("cargos").select("*"),
+        supabaseClient.from("colaboradores").select("*"),
+        supabaseClient.from("tabela_valores").select("*"),
+        supabaseClient.from("usuarios").select("*"),
+        supabaseClient.from("lancamentos").select("*")
+      ]);
+
+      const merged = {
+        empresas: mergeListsById(local.empresas, resEmpresas.data || []),
+        cargos: mergeListsById(local.cargos, resCargos.data || []),
+        colaboradores: mergeListsById(local.colaboradores, resColaboradores.data || []),
+        tabela_valores: mergeListsById(local.tabela_valores, (resValores.data || []).map(v => ({ ...v, valor: Number(v.valor || 0) }))),
+        usuarios: mergeListsById(local.usuarios, resUsuarios.data || []),
+        lancamentos: mergeListsById(local.lancamentos, (resLancamentos.data || []).map(l => ({
+          ...l,
+          valor: Number(l.valor || 0),
+          valor_tabela: Number(l.valor_tabela || 0),
+          historico: Array.isArray(l.historico) ? l.historico : []
+        })))
+      };
+
+      saveLocalStore(merged);
+
+      // Envia itens locais que ainda não estavam na nuvem
+      const checks = [
+        { name: "empresas", mergedRows: merged.empresas, cloudRows: resEmpresas.data || [] },
+        { name: "cargos", mergedRows: merged.cargos, cloudRows: resCargos.data || [] },
+        { name: "colaboradores", mergedRows: merged.colaboradores, cloudRows: resColaboradores.data || [] },
+        { name: "tabela_valores", mergedRows: merged.tabela_valores, cloudRows: resValores.data || [] },
+        { name: "usuarios", mergedRows: merged.usuarios, cloudRows: resUsuarios.data || [] },
+        { name: "lancamentos", mergedRows: merged.lancamentos, cloudRows: resLancamentos.data || [] }
+      ];
+
+      for (const c of checks) {
+        const cloudIds = new Set(c.cloudRows.map(r => r.id));
+        const novosLocais = c.mergedRows.filter(r => !cloudIds.has(r.id));
+        if (novosLocais.length > 0) {
+          await supabaseClient.from(c.name).upsert(novosLocais, { onConflict: "id" });
+        }
+      }
+
+      return merged;
+    } catch (e) {
+      console.error("Erro na sincronização bidirecional:", e);
+      return loadLocalStore();
+    }
   }
 
   async function pullAllFromCloud() {
@@ -304,9 +389,6 @@
     return true;
   }
 
-  // ==========================================================================
-  // CONSULTA AUTOMÁTICA DE VALOR (EMPRESA + CARGO -> VALOR)
-  // ==========================================================================
   function buscarValorTabela(empresaId, cargoId) {
     const store = loadLocalStore();
     if (!empresaId || !cargoId) return null;
@@ -316,9 +398,6 @@
     return item ? Number(item.valor) : null;
   }
 
-  // ==========================================================================
-  // CADASTRO RÁPIDO DE COLABORADOR PELO MÓDULO CELULAR
-  // ==========================================================================
   async function cadastrarColaboradorRapido(nome, cargoId) {
     const store = loadLocalStore();
     const nomeLimpo = String(nome || "").trim();
@@ -340,12 +419,9 @@
     return await upsertItem("colaboradores", novoColab);
   }
 
-  // ==========================================================================
-  // AUTENTICAÇÃO SEPARADA POR AMBIENTE (LANÇAMENTOS vs ADM)
-  // ==========================================================================
   async function loginUsuario(login, senha, perfilEsperado) {
     if (isCloudConnected) {
-      await pullAllFromCloud();
+      await syncBidirecional();
     }
     const store = loadLocalStore();
     const loginClean = String(login || "").trim().toLowerCase();
@@ -396,9 +472,6 @@
     localStorage.removeItem(sessionKey);
   }
 
-  // ==========================================================================
-  // OPERAÇÕES ESPECÍFICAS DE LANÇAMENTOS (QUEM LOGA É O SOLICITANTE)
-  // ==========================================================================
   async function criarLancamento(dados, usuarioSessao) {
     const store = loadLocalStore();
     const colab = store.colaboradores.find(c => c.id === dados.colaborador_id);
@@ -412,7 +485,6 @@
     const alteradoManual = valorTabela !== null && Math.abs(valorFinal - valorTabela) > 0.009;
     const now = new Date().toISOString();
 
-    // O próprio usuário logado no módulo celular é o solicitante e autor do lançamento
     const novo = {
       id: generateId("lnc"),
       colaborador_id: colab.id,
@@ -618,6 +690,7 @@
     saveLocalStore,
     pullAllFromCloud,
     pushLocalStoreToCloud,
+    syncBidirecional,
     getSupabaseCredentials,
     setSupabaseCredentials,
     isCloud: () => isCloudConnected,
