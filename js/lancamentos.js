@@ -1,6 +1,6 @@
 // ============================================================================
 // MÓDULO DE LANÇAMENTOS – CELULAR (EXCLUSIVO PARA PESSOAS AUTORIZADAS)
-// - Permite cadastrar novo colaborador rapidamente
+// - Permite cadastrar novo colaborador rapidamente (Nome + Documento + Cargo)
 // - Identifica automaticamente o usuário logado como Solicitante do serviço
 // - Apenas 6 campos + botão único SALVAR LANÇAMENTO
 // ============================================================================
@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnAbrirNovoColab = document.getElementById("btn-abrir-novo-colab");
   const boxNovoColab = document.getElementById("box-novo-colaborador");
   const inpNovoColabNome = document.getElementById("novo-colab-nome");
+  const inpNovoColabDoc = document.getElementById("novo-colab-documento");
   const selNovoColabCargo = document.getElementById("novo-colab-cargo");
   const btnSalvarNovoColab = document.getElementById("btn-confirmar-novo-colab");
   const btnCancelarNovoColab = document.getElementById("btn-cancelar-novo-colab");
@@ -77,7 +78,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const colab = store.colaboradores.find(c => c.id === colabId);
 
     if (colab) {
-      infoCargo.textContent = `Cargo: ${colab.cargo_nome}`;
+      const docTxt = colab.documento ? ` | Doc: ${colab.documento}` : "";
+      infoCargo.textContent = `Cargo: ${colab.cargo_nome}${docTxt}`;
       infoCargo.classList.remove("hidden");
     } else {
       infoCargo.classList.add("hidden");
@@ -128,15 +130,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnCancelarNovoColab.addEventListener("click", () => {
     boxNovoColab.classList.add("hidden");
     inpNovoColabNome.value = "";
+    inpNovoColabDoc.value = "";
     selNovoColabCargo.value = "";
   });
 
   btnSalvarNovoColab.addEventListener("click", async () => {
     const nome = inpNovoColabNome.value.trim();
+    const doc = inpNovoColabDoc.value.trim();
     const cargoId = selNovoColabCargo.value;
     if (!nome) {
-      mostrarFeedback("Digite o nome do novo colaborador.", "error");
+      mostrarFeedback("Digite o nome completo do novo colaborador.", "error");
       inpNovoColabNome.focus();
+      return;
+    }
+    if (!doc) {
+      mostrarFeedback("Digite o número do documento (CPF / RG) do colaborador.", "error");
+      inpNovoColabDoc.focus();
       return;
     }
     if (!cargoId) {
@@ -147,16 +156,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       btnSalvarNovoColab.disabled = true;
-      const novo = await window.DB.cadastrarColaboradorRapido(nome, cargoId);
+      const novo = await window.DB.cadastrarColaboradorRapido(nome, cargoId, doc);
       btnSalvarNovoColab.disabled = false;
 
       inpNovoColabNome.value = "";
+      inpNovoColabDoc.value = "";
       selNovoColabCargo.value = "";
       boxNovoColab.classList.add("hidden");
 
       carregarOpcoesFormulario(novo.id);
       atualizarValorAutomatico();
-      mostrarFeedback(`Colaborador "${novo.nome}" cadastrado e selecionado!`, "success");
+      mostrarFeedback(`Colaborador "${novo.nome}" (Doc: ${novo.documento}) cadastrado e selecionado!`, "success");
     } catch (err) {
       btnSalvarNovoColab.disabled = false;
       mostrarFeedback(err.message || "Erro ao cadastrar colaborador.", "error");
