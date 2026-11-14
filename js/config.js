@@ -1,14 +1,10 @@
 // ============================================================================
-// CONFIGURAÇÃO DO SISTEMA DE CONTROLE DE SERVIÇOS EXTRAS
+// CONFIGURAÇÃO DO SISTEMA DE CONTROLE DE SERVIÇOS EXTRAS (SUPABASE CONECTADO)
 // ============================================================================
-// Se você preencher SUPABASE_URL e SUPABASE_ANON_KEY abaixo antes de subir
-// para o GitHub, TODOS os celulares e computadores já conectarão direto
-// ao seu banco de dados na nuvem sem precisar configurar nada na tela!
-// Você também pode configurar pela aba "Banco Nuvem (Supabase)" no painel ADM.
 
 window.APP_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: "",
+  SUPABASE_URL: "https://lnimrlipppwwrrmtizvl.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuaW1ybGlwcHB3d3JybXRpenZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NzY0ODUsImV4cCI6MjExMDI1MjQ4NX0.pOEm_f2Drg6z9wkmLfEH8LJhoIRju9ZOu6vuS-VV8fQ",
   RETENCAO_DIAS: 30,
-  VERSAO: "1.0.0"
+  VERSAO: "1.1.0"
 };
