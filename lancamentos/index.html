@@ -19,14 +19,11 @@
     <!-- TELA DE LOGIN EXCLUSIVA PARA AUTORIZADOS -->
     <section id="login-view" class="mobile-card" style="margin-top: 28px;">
       <div style="text-align: center; margin-bottom: 20px;">
-        <img src="icon-se-192.png" alt="SE" style="width:56px; height:56px; border-radius:14px; margin-bottom:10px; display:inline-block;" />
+        <div style="display:inline-flex; width:52px; height:52px; border-radius:14px; background:#eff6ff; color:#1e40af; align-items:center; justify-content:center; font-weight:800; font-size:1.3rem; margin-bottom:10px;">
+          SE
+        </div>
         <h1 style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">Lançamento de Serviços Extras</h1>
         <p style="font-size: 0.88rem; color: #475569; margin-top: 4px;">Acesso exclusivo para solicitantes autorizados</p>
-        <div style="margin-top: 10px;">
-          <button type="button" class="btn btn-outline btn-sm btn-instalar-app" style="border-color:#93c5fd; color:#1e40af; background:#eff6ff; font-weight:800;">
-            📲 Baixar Ícone / Instalar no Celular
-          </button>
-        </div>
       </div>
 
       <form id="form-login" autocomplete="on">
@@ -50,10 +47,7 @@
           <h1>Novo Serviço Extra</h1>
           <div style="font-size: 0.78rem; opacity: 0.92;">Solicitante logado: <strong id="usuario-logado-nome">-</strong></div>
         </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button type="button" class="btn-logout-mini btn-instalar-app" title="Baixar Ícone no Celular">📲 App</button>
-          <button type="button" id="btn-sair" class="btn-logout-mini" title="Trocar usuário">Sair</button>
-        </div>
+        <button type="button" id="btn-sair" class="btn-logout-mini" title="Trocar usuário">Sair</button>
       </header>
 
       <div id="feedback-lancamento" class="toast-feedback hidden" style="margin-bottom: 14px;"></div>
