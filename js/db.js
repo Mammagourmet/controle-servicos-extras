@@ -247,19 +247,70 @@
         supabaseClient.from("lancamentos").select("*").order("data_trabalho", { ascending: false })
       ]);
 
+      // Remove automaticamente qualquer dado de demonstração antigo caso alguma aba antiga tenha reenviado
+      const nomesColabDemo = new Set(["carlos eduardo silva", "fernanda oliveira santos", "marcos vinícius souza"]);
+      const loginsDemo = new Set(["joao", "maria", "admin"]);
+      const idsLancDemo = new Set(["lnc_demo_1", "lnc_demo_2", "lnc_1794670253992_9d1em"]);
+
+      const colabsLimpos = [];
+      for (const c of (resColaboradores.data || [])) {
+        if (nomesColabDemo.has(String(c.nome || "").trim().toLowerCase())) {
+          supabaseClient.from("colaboradores").delete().eq("id", c.id).then(() => {});
+        } else {
+          colabsLimpos.push(c);
+        }
+      }
+
+      const usuariosLimpos = [];
+      for (const u of (resUsuarios.data || [])) {
+        if (loginsDemo.has(String(u.login || "").trim().toLowerCase())) {
+          supabaseClient.from("usuarios").delete().eq("id", u.id).then(() => {});
+        } else {
+          usuariosLimpos.push(u);
+        }
+      }
+
+      const empresasLimpas = [];
+      for (const e of (resEmpresas.data || [])) {
+        if (e.id === "emp_1" && e.nome === "Matriz - Unidade Central") {
+          e.nome = "MAMMA GOURMET";
+          e.cnpj = "";
+          supabaseClient.from("empresas").update({ nome: "MAMMA GOURMET", cnpj: "" }).eq("id", "emp_1").then(() => {});
+        }
+        if (e.id === "emp_2" && e.nome === "Filial Sul - Eventos & Serviços") {
+          e.nome = "APL GRANJA";
+          e.cnpj = "";
+          supabaseClient.from("empresas").update({ nome: "APL GRANJA", cnpj: "" }).eq("id", "emp_2").then(() => {});
+        }
+        empresasLimpas.push(e);
+      }
+
+      const lancamentosLimpos = [];
+      for (const l of (resLancamentos.data || [])) {
+        if (idsLancDemo.has(l.id) || nomesColabDemo.has(String(l.colaborador_nome || "").trim().toLowerCase())) {
+          supabaseClient.from("lancamentos").delete().eq("id", l.id).then(() => {});
+        } else {
+          lancamentosLimpos.push({
+            ...l,
+            valor: Number(l.valor || 0),
+            valor_tabela: Number(l.valor_tabela || 0),
+            historico: Array.isArray(l.historico) ? l.historico : []
+          });
+        }
+      }
+
       const local = loadLocalStore();
       const updated = {
-        empresas: !resEmpresas.error && resEmpresas.data ? resEmpresas.data : local.empresas,
+        empresas: !resEmpresas.error ? empresasLimpas : local.empresas,
         cargos: !resCargos.error && resCargos.data ? resCargos.data : local.cargos,
-        colaboradores: !resColaboradores.error && resColaboradores.data ? resColaboradores.data : local.colaboradores,
-        tabela_valores: !resValores.error && resValores.data ? resValores.data.map(v => ({ ...v, valor: Number(v.valor || 0) })) : local.tabela_valores,
-        usuarios: !resUsuarios.error && resUsuarios.data && resUsuarios.data.length > 0 ? resUsuarios.data : local.usuarios,
-        lancamentos: !resLancamentos.error && resLancamentos.data ? resLancamentos.data.map(l => ({
-          ...l,
-          valor: Number(l.valor || 0),
-          valor_tabela: Number(l.valor_tabela || 0),
-          historico: Array.isArray(l.historico) ? l.historico : []
-        })) : local.lancamentos
+        colaboradores: !resColaboradores.error ? colabsLimpos : local.colaboradores,
+        tabela_valores: !resValores.error && resValores.data ? resValores.data.map(v => ({
+          ...v,
+          empresa_nome: v.empresa_id === "emp_1" ? "MAMMA GOURMET" : (v.empresa_id === "emp_2" ? "APL GRANJA" : v.empresa_nome),
+          valor: Number(v.valor || 0)
+        })) : local.tabela_valores,
+        usuarios: !resUsuarios.error && usuariosLimpos.length > 0 ? usuariosLimpos : local.usuarios,
+        lancamentos: !resLancamentos.error ? lancamentosLimpos : local.lancamentos
       };
       saveLocalStore(updated);
       return updated;
