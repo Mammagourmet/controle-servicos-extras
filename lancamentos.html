@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Lançamento de Serviços Extras</title>
+  <title>SE - Lançamento de Serviços Extras</title>
+  <meta name="theme-color" content="#1e40af" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="SE Extras" />
+  <link rel="manifest" href="lancamentos/manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="lancamentos/icon-se-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="lancamentos/icon-se-180.png" />
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -12,11 +19,14 @@
     <!-- TELA DE LOGIN EXCLUSIVA PARA AUTORIZADOS -->
     <section id="login-view" class="mobile-card" style="margin-top: 28px;">
       <div style="text-align: center; margin-bottom: 20px;">
-        <div style="display:inline-flex; width:52px; height:52px; border-radius:14px; background:#eff6ff; color:#1e40af; align-items:center; justify-content:center; font-weight:800; font-size:1.3rem; margin-bottom:10px;">
-          SE
-        </div>
+        <img src="lancamentos/icon-se-192.png" alt="SE" style="width:56px; height:56px; border-radius:14px; margin-bottom:10px; display:inline-block;" />
         <h1 style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">Lançamento de Serviços Extras</h1>
         <p style="font-size: 0.88rem; color: #475569; margin-top: 4px;">Acesso exclusivo para solicitantes autorizados</p>
+        <div style="margin-top: 10px;">
+          <button type="button" class="btn btn-outline btn-sm btn-instalar-app" style="border-color:#93c5fd; color:#1e40af; background:#eff6ff; font-weight:800;">
+            📲 Baixar Ícone / Instalar no Celular
+          </button>
+        </div>
       </div>
 
       <form id="form-login" autocomplete="on">
@@ -40,7 +50,10 @@
           <h1>Novo Serviço Extra</h1>
           <div style="font-size: 0.78rem; opacity: 0.92;">Solicitante logado: <strong id="usuario-logado-nome">-</strong></div>
         </div>
-        <button type="button" id="btn-sair" class="btn-logout-mini" title="Trocar usuário">Sair</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button type="button" class="btn-logout-mini btn-instalar-app" title="Baixar Ícone no Celular">📲 App</button>
+          <button type="button" id="btn-sair" class="btn-logout-mini" title="Trocar usuário">Sair</button>
+        </div>
       </header>
 
       <div id="feedback-lancamento" class="toast-feedback hidden" style="margin-bottom: 14px;"></div>
@@ -148,5 +161,15 @@
   <script src="js/config.js"></script>
   <script src="js/db.js"></script>
   <script src="js/lancamentos.js"></script>
+  <script src="js/pwa.js"></script>
+  <script>
+    window.initPwaModule({
+      shortName: "SE Extras",
+      iconUrl: "lancamentos/icon-se-192.png",
+      iconDownloadUrl: "lancamentos/icon-se-512.png",
+      downloadFileName: "icone-SE.png",
+      themeColor: "#1e40af"
+    });
+  </script>
 </body>
 </html>
