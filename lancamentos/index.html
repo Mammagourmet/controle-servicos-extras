@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SE - Lançamento de Serviços Extras</title>
   <meta name="theme-color" content="#1e40af" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -37,6 +37,11 @@
         </div>
         <div id="login-error" class="toast-feedback error hidden" style="margin-bottom: 12px;"></div>
         <button type="submit" class="btn-salvar-unico" style="background: #1e40af;">ENTRAR</button>
+        <div style="text-align: center; margin-top: 12px;">
+          <button type="button" class="btn btn-outline btn-sm btn-instalar-app hidden" style="width: 100%; justify-content: center;">
+            📲 Salvar Aplicativo na Tela Inicial do Celular
+          </button>
+        </div>
       </form>
     </section>
 
@@ -158,6 +163,7 @@
   <script src="../js/pwa.js"></script>
   <script>
     window.initPwaModule({
+      appKey: "se_lancamentos",
       shortName: "SE Extras",
       iconUrl: "icon-se-192.png",
       iconDownloadUrl: "icon-se-512.png",
