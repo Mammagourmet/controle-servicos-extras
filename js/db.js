@@ -16,7 +16,6 @@
 
   function getInitialStore() {
     const now = new Date().toISOString();
-    const today = new Date().toISOString().slice(0, 10);
     return {
       empresas: [
         { id: "emp_1", nome: "Matriz - Unidade Central", cnpj: "12.345.678/0001-90", ativo: true, criado_em: now },
@@ -108,14 +107,11 @@
     }));
   }
 
-  // Mescla listas por chave única (evitando conflitos de UNIQUE constraint no PostgreSQL)
   function mergeListsUnique(localList, cloudList, keyFn) {
     const map = new Map();
-    // Primeiro coloca os da nuvem
     for (const item of (cloudList || [])) {
       if (item) map.set(keyFn(item), item);
     }
-    // Depois aplica os locais por cima (priorizando os cadastros feitos pelo usuário)
     for (const item of (localList || [])) {
       if (item) map.set(keyFn(item), item);
     }
@@ -198,16 +194,13 @@
     }
   }
 
-  // Envia dados locais para o Supabase tratando chaves únicas (nome de cargo, empresa+cargo, login)
   async function enviarLinhasSeguramente(store) {
     if (!supabaseClient) return;
 
-    // 1. Empresas
     if (store.empresas && store.empresas.length > 0) {
       await supabaseClient.from("empresas").upsert(store.empresas, { onConflict: "id" });
     }
 
-    // 2. Cargos (evita conflito de nome único)
     const cargosUnicos = mergeListsUnique(store.cargos, [], x => String(x.nome || "").trim().toLowerCase());
     for (const crg of cargosUnicos) {
       const { error } = await supabaseClient.from("cargos").upsert(crg, { onConflict: "id" });
@@ -216,15 +209,12 @@
       }
     }
 
-    // 3. Colaboradores
     if (store.colaboradores && store.colaboradores.length > 0) {
       await supabaseClient.from("colaboradores").upsert(store.colaboradores, { onConflict: "id" });
     }
 
-    // 4. Tabela de Valores (chave única composta: empresa_id,cargo_id)
     const valoresUnicos = mergeListsUnique(store.tabela_valores, [], x => `${x.empresa_id}___${x.cargo_id}`);
     for (const val of valoresUnicos) {
-      // Remove qualquer registro existente na nuvem com o mesmo par (empresa_id, cargo_id) mas id diferente
       await supabaseClient
         .from("tabela_valores")
         .delete()
@@ -243,7 +233,6 @@
       }
     }
 
-    // 5. Usuários (chave única: login)
     const usuariosUnicos = mergeListsUnique(store.usuarios, [], x => String(x.login || "").trim().toLowerCase());
     for (const usr of usuariosUnicos) {
       await supabaseClient
@@ -254,7 +243,6 @@
       await supabaseClient.from("usuarios").upsert(usr, { onConflict: "id" });
     }
 
-    // 6. Lançamentos
     if (store.lancamentos && store.lancamentos.length > 0) {
       await supabaseClient.from("lancamentos").upsert(store.lancamentos, { onConflict: "id" });
     }
@@ -362,10 +350,13 @@
     return item ? Number(item.valor) : null;
   }
 
-  async function cadastrarColaboradorRapido(nome, cargoId) {
+  // Cadastrar Novo Colaborador pelo Celular (Nome + Documento + Cargo)
+  async function cadastrarColaboradorRapido(nome, cargoId, documento) {
     const store = loadLocalStore();
     const nomeLimpo = String(nome || "").trim();
+    const docLimpo = String(documento || "").trim();
     if (!nomeLimpo) throw new Error("Informe o nome do colaborador.");
+    if (!docLimpo) throw new Error("Informe o número do documento do colaborador.");
     const cargo = store.cargos.find(c => c.id === cargoId);
     if (!cargo) throw new Error("Selecione o cargo do colaborador.");
 
@@ -374,7 +365,7 @@
       nome: nomeLimpo,
       cargo_id: cargo.id,
       cargo_nome: cargo.nome,
-      documento: "",
+      documento: docLimpo,
       telefone: "",
       ativo: true,
       criado_em: new Date().toISOString()
