@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Administrativo - Controle de Serviços Extras</title>
+  <title>ADM - Controle de Serviços Extras</title>
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ADM Extras" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-adm-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-adm-180.png" />
   <link rel="stylesheet" href="../css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -15,11 +22,14 @@
   <main id="adm-login-view" class="mobile-shell" style="justify-content: center;">
     <section class="mobile-card">
       <div style="text-align: center; margin-bottom: 20px;">
-        <div style="display:inline-flex; width:54px; height:54px; border-radius:14px; background:#0f172a; color:#fff; align-items:center; justify-content:center; font-weight:800; font-size:1.2rem; margin-bottom:10px;">
-          ADM
-        </div>
+        <img src="icon-adm-192.png" alt="ADM" style="width:56px; height:56px; border-radius:14px; margin-bottom:10px; display:inline-block;" />
         <h1 style="font-size: 1.25rem; font-weight: 800;">Módulo Administrativo</h1>
         <p style="font-size: 0.86rem; color: #475569; margin-top: 4px;">Controle de Serviços Extras, Fechamentos e Recibos</p>
+        <div style="margin-top: 10px;">
+          <button type="button" class="btn btn-outline btn-sm btn-instalar-app" style="border-color:#0f172a; color:#0f172a; background:#f8fafc; font-weight:800;">
+            📲 Baixar Ícone / Instalar no Celular
+          </button>
+        </div>
       </div>
 
       <form id="form-adm-login">
@@ -46,6 +56,7 @@
       </div>
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
         <span style="font-size: 0.82rem; color: #cbd5e1;">Admin: <strong id="adm-user-name" style="color:#fff;">-</strong></span>
+        <button type="button" class="btn btn-sm btn-outline btn-instalar-app" style="background:#1e293b; color:#fff; border-color:#475569;">📲 App</button>
         <button type="button" id="btn-sync-now" class="btn btn-sm btn-outline" style="background:#1e293b; color:#fff; border-color:#475569;">Atualizar</button>
         <button type="button" id="btn-adm-logout" class="btn btn-sm btn-danger">Sair</button>
       </div>
@@ -696,5 +707,15 @@
   <script src="../js/config.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/adm.js"></script>
+  <script src="../js/pwa.js"></script>
+  <script>
+    window.initPwaModule({
+      shortName: "ADM Extras",
+      iconUrl: "icon-adm-192.png",
+      iconDownloadUrl: "icon-adm-512.png",
+      downloadFileName: "icone-ADM.png",
+      themeColor: "#0f172a"
+    });
+  </script>
 </body>
 </html>
