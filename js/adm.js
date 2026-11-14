@@ -47,9 +47,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     return d.toLocaleString("pt-BR");
   }
 
-  function obterDocumentoColaborador(colaboradorId) {
+  function obterDocumentoColaborador(colaboradorId, colaboradorNome) {
     const store = window.DB.loadLocalStore();
-    const c = store.colaboradores.find(x => x.id === colaboradorId);
+    let c = store.colaboradores.find(x => x.id === colaboradorId && x.documento);
+    if (!c && colaboradorNome) {
+      const nomeAlvo = String(colaboradorNome || "").trim().toLowerCase();
+      c = store.colaboradores.find(
+        x => String(x.nome || "").trim().toLowerCase() === nomeAlvo && x.documento
+      );
+    }
+    if (!c) {
+      c = store.colaboradores.find(x => x.id === colaboradorId);
+    }
     return (c && c.documento) ? c.documento : "-";
   }
 
@@ -233,7 +242,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const cancelado = l.status_lancamento === "CANCELADO";
       const pago = l.status_pagamento === "PAGO";
       const nomeSolicitante = l.lancado_por_nome || l.solicitante_nome || "-";
-      const docColab = obterDocumentoColaborador(l.colaborador_id);
+      const docColab = obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome);
       return `
         <tr style="${cancelado ? "opacity:0.6; background:#fef2f2;" : ""}">
           <td data-label="Data"><strong>${formatDataBR(l.data_trabalho)}</strong></td>
@@ -341,7 +350,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       lista.map(l => ({
         Data: formatDataBR(l.data_trabalho),
         Colaborador: l.colaborador_nome,
-        Documento: obterDocumentoColaborador(l.colaborador_id),
+        Documento: obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome),
         Cargo: l.cargo_nome,
         Empresa: l.empresa_nome,
         Turno: l.turno,
@@ -489,7 +498,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           id: l.colaborador_id,
           nome: l.colaborador_nome,
           cargo: l.cargo_nome,
-          doc: obterDocumentoColaborador(l.colaborador_id),
+          doc: obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome),
           qtd: 0,
           pendente: 0,
           pago: 0,
@@ -669,7 +678,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           chave,
           colaborador_id: l.colaborador_id,
           colaborador_nome: l.colaborador_nome,
-          documento: obterDocumentoColaborador(l.colaborador_id),
+          documento: obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome),
           cargo_nome: l.cargo_nome,
           empresa_nome: l.empresa_nome,
           itens: [],
@@ -810,7 +819,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!mapCol.has(l.colaborador_id)) {
         mapCol.set(l.colaborador_id, {
           Colaborador: l.colaborador_nome,
-          Documento: obterDocumentoColaborador(l.colaborador_id),
+          Documento: obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome),
           Cargo: l.cargo_nome,
           "Qtd Serviços": 0,
           "Total Pendente (R$)": 0,
@@ -848,7 +857,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const formatarLinhaDetalhe = (l) => ({
       "Data do Serviço": formatDataBR(l.data_trabalho),
       "Quem Realizou (Colaborador)": l.colaborador_nome,
-      Documento: obterDocumentoColaborador(l.colaborador_id),
+      Documento: obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome),
       Cargo: l.cargo_nome,
       Empresa: l.empresa_nome,
       "Turno Realizado": l.turno,
@@ -962,7 +971,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const bodyRows = ativos.map(l => [
       formatDataBR(l.data_trabalho),
       l.colaborador_nome,
-      obterDocumentoColaborador(l.colaborador_id),
+      obterDocumentoColaborador(l.colaborador_id, l.colaborador_nome),
       l.cargo_nome || "-",
       l.empresa_nome,
       l.turno,
