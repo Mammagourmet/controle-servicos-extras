@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="../css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <!-- TELA DE LOGIN DO ADMINISTRADOR -->
@@ -53,7 +55,7 @@
       <button type="button" class="adm-tab-btn active" data-tab="tab-lancamentos">1. Lançamentos</button>
       <button type="button" class="adm-tab-btn" data-tab="tab-fechamentos">2. Fechamentos</button>
       <button type="button" class="adm-tab-btn" data-tab="tab-recibos">3. Recibos (PDF)</button>
-      <button type="button" class="adm-tab-btn" data-tab="tab-relatorios">4. Relatórios (.XLSX)</button>
+      <button type="button" class="adm-tab-btn" data-tab="tab-relatorios">4. Relatórios (PDF Paisagem / .XLSX)</button>
       <button type="button" class="adm-tab-btn" data-tab="tab-cadastros">5. Cadastros e Valores</button>
       <button type="button" class="adm-tab-btn" data-tab="tab-armazenamento">6. Retenção (30d) & Nuvem</button>
     </nav>
@@ -128,7 +130,7 @@
               <thead>
                 <tr>
                   <th>Data</th>
-                  <th>Colaborador / Cargo</th>
+                  <th>Colaborador / Cargo / Doc</th>
                   <th>Empresa</th>
                   <th>Turno</th>
                   <th>Motivo</th>
@@ -188,7 +190,7 @@
               <thead>
                 <tr>
                   <th>Colaborador</th>
-                  <th>Cargo</th>
+                  <th>Cargo / Doc</th>
                   <th>Qtd. Serviços</th>
                   <th>Pendente (R$)</th>
                   <th>Pago (R$)</th>
@@ -269,17 +271,24 @@
         <div id="container-recibos" class="recibos-wrapper"></div>
       </section>
 
-      <!-- ABA 4: RELATÓRIOS E EXPORTAÇÃO EXCEL (.XLSX) -->
+      <!-- ABA 4: RELATÓRIOS COMPLETOS (PDF PAISAGEM + EXCEL .XLSX) -->
       <section id="tab-relatorios" class="adm-tab-pane hidden">
         <div class="panel-card">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Relatórios Gerenciais e Exportação para Excel (.xlsx)</h2>
-              <p style="font-size:0.84rem; color:#475569;">Consulte pelo celular ou computador e exporte para planilha Excel.</p>
+              <h2 class="panel-title">Relatórios Gerenciais (PDF em Formato Paisagem e Excel .xlsx)</h2>
+              <p style="font-size:0.84rem; color:#475569;">
+                Gere o Relatório Completo em PDF Paisagem (com data, quem realizou, documento, empresa, motivo, turno, valor e soma total no período) ou exporte para Excel.
+              </p>
             </div>
-            <button type="button" id="btn-export-pacote-completo" class="btn btn-success">
-              Baixar Excel Completo (Todas as Abas .xlsx)
-            </button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" id="btn-export-relatorio-pdf-paisagem" class="btn btn-primary">
+                Baixar Relatório Completo em PDF (Paisagem)
+              </button>
+              <button type="button" id="btn-export-pacote-completo" class="btn btn-success">
+                Baixar Excel Completo (.xlsx)
+              </button>
+            </div>
           </div>
 
           <div class="filters-grid">
@@ -296,20 +305,32 @@
               <select id="rel-empresa" class="form-control"></select>
             </div>
             <div>
-              <label class="form-label">Tipo de Relatório na Tela</label>
+              <label class="form-label">Colaborador</label>
+              <select id="rel-colaborador" class="form-control"></select>
+            </div>
+            <div>
+              <label class="form-label">Status Pagamento</label>
+              <select id="rel-pagamento" class="form-control">
+                <option value="TODOS">Todos (Pagos + Pendentes)</option>
+                <option value="PENDENTE">Somente Pendentes</option>
+                <option value="PAGO">Somente Pagos</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Tipo de Visão na Tela</label>
               <select id="rel-tipo-visao" class="form-control">
-                <option value="COLABORADOR">1. Total por Colaborador</option>
-                <option value="EMPRESA">2. Total por Empresa</option>
-                <option value="PERIODO">3. Serviços Realizados por Período</option>
-                <option value="PENDENTES">4. Valores Pendentes</option>
-                <option value="PAGOS">5. Valores Pagos</option>
+                <option value="PERIODO">1. Relatório Completo Detalhado por Período</option>
+                <option value="COLABORADOR">2. Total por Colaborador</option>
+                <option value="EMPRESA">3. Total por Empresa</option>
+                <option value="PENDENTES">4. Somente Valores Pendentes</option>
+                <option value="PAGOS">5. Somente Valores Pagos</option>
               </select>
             </div>
           </div>
 
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-            <button type="button" id="btn-export-relatorio-atual" class="btn btn-primary btn-sm">
-              Exportar Relatório Selecionado (.xlsx)
+            <button type="button" id="btn-export-relatorio-atual" class="btn btn-outline btn-sm">
+              Exportar Visão Atual em Excel (.xlsx)
             </button>
           </div>
 
@@ -319,10 +340,21 @@
               <tbody id="tbody-relatorio"></tbody>
             </table>
           </div>
+
+          <!-- Quadro de Fechamento Final do Período Solicitado -->
+          <div id="resumo-periodo-relatorio" style="margin-top: 16px; padding: 16px; border-radius: 10px; background: #f8fafc; border: 2px solid #1e40af; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase;">Resumo Financeiro do Período Solicitado</div>
+              <div id="rel-resumo-detalhe" style="font-size: 0.9rem; color: #0f172a; margin-top: 4px;">0 serviços registrados</div>
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #1e40af;">
+              VALOR TOTAL NO PERÍODO: <span id="rel-valor-total-periodo">R$ 0,00</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ABA 5: CADASTROS E VALORES (SEM A ABA "QUEM SOLICITA", POIS QUEM LOGA É O SOLICITANTE) -->
+      <!-- ABA 5: CADASTROS E VALORES -->
       <section id="tab-cadastros" class="adm-tab-pane hidden">
         <div class="subtabs-bar">
           <button type="button" class="btn btn-primary btn-sm cad-subtab-btn" data-subtab="sub-valores">Tabela de Valores</button>
@@ -376,7 +408,7 @@
         <!-- 5.2 COLABORADORES -->
         <div id="sub-colaboradores" class="cad-subpane panel-card hidden">
           <div class="panel-header">
-            <h3 class="panel-title">Cadastro de Colaboradores (Nome e Cargo)</h3>
+            <h3 class="panel-title">Cadastro de Colaboradores (Nome, Documento e Cargo)</h3>
           </div>
           <form id="form-cad-colaborador" class="filters-grid" style="background:#f8fafc; padding:14px; border-radius:10px; border:1px solid #e2e8f0;">
             <input type="hidden" id="col-id" />
@@ -385,12 +417,12 @@
               <input type="text" id="col-nome" class="form-control" placeholder="Nome do colaborador" required />
             </div>
             <div>
-              <label class="form-label">Cargo</label>
-              <select id="col-cargo" class="form-control" required></select>
+              <label class="form-label">Número do Documento (CPF / RG)</label>
+              <input type="text" id="col-doc" class="form-control" placeholder="000.000.000-00" required />
             </div>
             <div>
-              <label class="form-label">CPF / Documento (Opcional)</label>
-              <input type="text" id="col-doc" class="form-control" placeholder="000.000.000-00" />
+              <label class="form-label">Cargo</label>
+              <select id="col-cargo" class="form-control" required></select>
             </div>
             <div>
               <button type="submit" class="btn btn-success" style="width:100%;">Salvar Colaborador</button>
